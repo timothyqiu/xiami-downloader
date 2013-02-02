@@ -50,13 +50,16 @@ def decode_location(location):
 def download(url, dest):
     urllib.urlretrieve(url, dest)
 
+
 def usage():
     message = [
         'Usage: %s [options]' % (sys.argv[0]),
-        '    -s : song id',
-        '    -a : album id'
+        '    -a <album id>: Adds all songs in an album to download list.',
+        '    -s <song id>: Adds a song to download list.',
+        '    -h : Shows usage.'
     ]
     print '\n'.join(message)
+
 
 if __name__ == '__main__':
     print 'Xiami Music Preview Downloader'
@@ -75,9 +78,10 @@ if __name__ == '__main__':
             playlists.append(URL_PATTERN_ALBUM % int(value))
         elif key == '-s':
             playlists.append(URL_PATTERN_SONG % int(value))
-        elif key == '-h':
-            usage()
-            sys.exit(1)
+
+    if ('-h' in optlist) or (len(playlists) == 0):
+        usage()
+        sys.exit(1)
 
     tracks = []
 

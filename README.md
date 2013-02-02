@@ -10,8 +10,9 @@ Note: this is a python script using python 2.
 
 ## Options
 
-* `-s <song id>` Adds a song to download list.
 * `-a <album id>` Adds all songs in an album to download list.
+* `-s <song id>` Adds a song to download list.
+* `-h` Shows usage.
 
 `<song id>` and `<album id>` can be retrived from URLs of Xiami.
 
