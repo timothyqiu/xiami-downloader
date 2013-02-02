@@ -79,7 +79,7 @@ if __name__ == '__main__':
         elif key == '-s':
             playlists.append(URL_PATTERN_SONG % int(value))
 
-    if ('-h' in optlist) or (len(playlists) == 0):
+    if ('-h' in optlist) or (not playlists):
         usage()
         sys.exit(1)
 
