@@ -50,18 +50,34 @@ def decode_location(location):
 def download(url, dest):
     urllib.urlretrieve(url, dest)
 
+def usage():
+    message = [
+        'Usage: %s [options]' % (sys.argv[0]),
+        '    -s : song id',
+        '    -a : album id'
+    ]
+    print '\n'.join(message)
 
 if __name__ == '__main__':
     print 'Xiami Music Preview Downloader'
 
     playlists = []
 
-    optlist, args = getopt.getopt(sys.argv[1:], 'a:s:')
+    try:
+        optlist, args = getopt.getopt(sys.argv[1:], 'ha:s:')
+    except getopt.GetoptError as e:
+        print e
+        usage()
+        sys.exit(1)
+
     for key, value in optlist:
         if key == '-a':
             playlists.append(URL_PATTERN_ALBUM % int(value))
         elif key == '-s':
             playlists.append(URL_PATTERN_SONG % int(value))
+        elif key == '-h':
+            usage()
+            sys.exit(1)
 
     tracks = []
 
