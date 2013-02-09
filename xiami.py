@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import getopt
+import re
 import sys
 import urllib
 import urllib2
@@ -16,7 +17,7 @@ USER_AGENT = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)'
 
 def get_playlist_from_url(url):
     request = urllib2.Request(url)
-    request.add_header('User-Agent', USER_AGENT);  # Xiami now blocks python UA
+    request.add_header('User-Agent', USER_AGENT)  # Xiami now blocks python UA
     data = urllib2.urlopen(request).read()
     return parse_playlist(data)
 
@@ -53,6 +54,10 @@ def decode_location(location):
     return urllib.unquote(url).replace('^', '0')
 
 
+def sanitize_filename(filename):
+    return re.sub('[\/:*?<>|]', '_', filename)
+
+
 def download(url, dest):
     urllib.urlretrieve(url, dest)
 
@@ -69,7 +74,7 @@ def usage():
 
 
 if __name__ == '__main__':
-    print 'Xiami Music Preview Downloader v0.1.1'
+    print 'Xiami Music Preview Downloader v0.1.2'
 
     playlists = []
 
@@ -99,12 +104,14 @@ if __name__ == '__main__':
             tracks.append(url)
 
     print '%d file(s) to download' % len(tracks)
-    for i in xrange(len(tracks)):
-        print '%s' % tracks[i]['title']
 
     for i in xrange(len(tracks)):
         track = tracks[i]
-        filename = '%s.mp3' % track['title']
-        url = decode_location(track['location'])
+        track['url'] = decode_location(track['location'])
+
+    for i in xrange(len(tracks)):
+        track = tracks[i]
+        filename = '%s.mp3' % sanitize_filename(track['title'])
+        url = track['url']
         print '[%02d/%02d] Downloading %s...' % (i, len(tracks), filename)
         download(url, filename)
