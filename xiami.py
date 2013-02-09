@@ -19,8 +19,14 @@ def get_response(url):
     request = urllib2.Request(url)
     request.add_header('User-Agent', USER_AGENT)  # Xiami now blocks python UA
     request.add_header('Referer', 'http://www.xiami.com/song/play')
-    response = urllib2.urlopen(request)
-    return response.read()
+
+    try:
+        response = urllib2.urlopen(request)
+        return response.read()
+    except urllib2.URLError as e:
+        print e
+
+    return ''
 
 
 def get_playlist_from_url(url):
@@ -28,7 +34,11 @@ def get_playlist_from_url(url):
 
 
 def parse_playlist(playlist):
-    xml = ET.fromstring(playlist)
+    try:
+        xml = ET.fromstring(playlist)
+    except:
+        return []
+
     return [
         {
             'title': track.find('{http://xspf.org/ns/0/}title').text,
@@ -64,8 +74,11 @@ def sanitize_filename(filename):
 
 
 def download(url, dest):
-    with open(dest, 'wb') as output:
-        output.write(get_response(url))
+    try:
+        with open(dest, 'wb') as output:
+            output.write(get_response(url))
+    except IOError as e:
+        print e
 
 
 def usage():
@@ -80,7 +93,7 @@ def usage():
 
 
 if __name__ == '__main__':
-    print 'Xiami Music Preview Downloader v0.1.3'
+    print 'Xiami Music Preview Downloader v0.1.4'
 
     playlists = []
 
