@@ -136,5 +136,5 @@ if __name__ == '__main__':
         track = tracks[i]
         filename = '%s.mp3' % sanitize_filename(track['title'])
         url = track['url']
-        print '[%02d/%02d] Downloading %s...' % (i, len(tracks), filename)
+        print '[%02d/%02d] Downloading %s...' % (i + 1, len(tracks), filename)
         download(url, filename)
