@@ -15,11 +15,16 @@ URL_PATTERN_PLAYLIST = '%s/type/3' % URL_PATTERN_ID
 USER_AGENT = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)'
 
 
-def get_playlist_from_url(url):
+def get_response(url):
     request = urllib2.Request(url)
     request.add_header('User-Agent', USER_AGENT)  # Xiami now blocks python UA
-    data = urllib2.urlopen(request).read()
-    return parse_playlist(data)
+    request.add_header('Referer', 'http://www.xiami.com/song/play')
+    response = urllib2.urlopen(request)
+    return response.read()
+
+
+def get_playlist_from_url(url):
+    return parse_playlist(get_response(url))
 
 
 def parse_playlist(playlist):
@@ -59,7 +64,8 @@ def sanitize_filename(filename):
 
 
 def download(url, dest):
-    urllib.urlretrieve(url, dest)
+    with open(dest, 'wb') as output:
+        output.write(get_response(url))
 
 
 def usage():
@@ -74,7 +80,7 @@ def usage():
 
 
 if __name__ == '__main__':
-    print 'Xiami Music Preview Downloader v0.1.2'
+    print 'Xiami Music Preview Downloader v0.1.3'
 
     playlists = []
 
