@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 URL_PATTERN_ID = 'http://www.xiami.com/song/playlist/id/%d'
 URL_PATTERN_SONG = '%s/object_name/default/object_id/0' % URL_PATTERN_ID
 URL_PATTERN_ALBUM = '%s/type/1' % URL_PATTERN_ID
+URL_PATTERN_PLAYLIST = '%s/type/3' % URL_PATTERN_ID
 USER_AGENT = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)'
 
 
@@ -60,6 +61,7 @@ def usage():
     message = [
         'Usage: %s [options]' % (sys.argv[0]),
         '    -a <album id>: Adds all songs in an album to download list.',
+        '    -p <playlist id>: Adds all songs in a playlist to download list.',
         '    -s <song id>: Adds a song to download list.',
         '    -h : Shows usage.'
     ]
@@ -67,12 +69,12 @@ def usage():
 
 
 if __name__ == '__main__':
-    print 'Xiami Music Preview Downloader v0.1.0'
+    print 'Xiami Music Preview Downloader v0.1.1'
 
     playlists = []
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], 'ha:s:')
+        optlist, args = getopt.getopt(sys.argv[1:], 'ha:p:s:')
     except getopt.GetoptError as e:
         print e
         usage()
@@ -81,6 +83,8 @@ if __name__ == '__main__':
     for key, value in optlist:
         if key == '-a':
             playlists.append(URL_PATTERN_ALBUM % int(value))
+        elif key == '-p':
+            playlists.append(URL_PATTERN_PLAYLIST % int(value))
         elif key == '-s':
             playlists.append(URL_PATTERN_SONG % int(value))
 
@@ -95,6 +99,9 @@ if __name__ == '__main__':
             tracks.append(url)
 
     print '%d file(s) to download' % len(tracks)
+    for i in xrange(len(tracks)):
+        print '%s' % tracks[i]['title']
+
     for i in xrange(len(tracks)):
         track = tracks[i]
         filename = '%s.mp3' % track['title']
