@@ -4,15 +4,20 @@
 import getopt
 import sys
 import urllib
+import urllib2
 import xml.etree.ElementTree as ET
 
 URL_PATTERN_ID = 'http://www.xiami.com/song/playlist/id/%d'
 URL_PATTERN_SONG = '%s/object_name/default/object_id/0' % URL_PATTERN_ID
 URL_PATTERN_ALBUM = '%s/type/1' % URL_PATTERN_ID
+USER_AGENT = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)'
 
 
 def get_playlist_from_url(url):
-    return parse_playlist(urllib.urlopen(url).read())
+    request = urllib2.Request(url)
+    request.add_header('User-Agent', USER_AGENT);  # Xiami now blocks python UA
+    data = urllib2.urlopen(request).read()
+    return parse_playlist(data)
 
 
 def parse_playlist(playlist):
@@ -62,7 +67,7 @@ def usage():
 
 
 if __name__ == '__main__':
-    print 'Xiami Music Preview Downloader'
+    print 'Xiami Music Preview Downloader v0.1.0'
 
     playlists = []
 
