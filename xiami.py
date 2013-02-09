@@ -16,6 +16,10 @@ USER_AGENT = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)'
 
 
 def get_response(url):
+    """ Get HTTP response as text
+
+    If sent without the headers, there may be a 503/403 error.
+    """
     request = urllib2.Request(url)
     request.add_header('User-Agent', USER_AGENT)  # Xiami now blocks python UA
     request.add_header('Referer', 'http://www.xiami.com/song/play')
@@ -101,7 +105,6 @@ if __name__ == '__main__':
         optlist, args = getopt.getopt(sys.argv[1:], 'ha:p:s:')
     except getopt.GetoptError as e:
         print e
-        usage()
         sys.exit(1)
 
     for key, value in optlist:
@@ -118,6 +121,7 @@ if __name__ == '__main__':
 
     tracks = []
 
+    # parse playlist xml for a list of track info
     for playlist_url in playlists:
         for url in get_playlist_from_url(playlist_url):
             tracks.append(url)
