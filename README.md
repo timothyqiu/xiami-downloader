@@ -13,6 +13,7 @@ Note: this is a python script using python 2.
 * `-a <album id>` Adds all songs in an album to download list.
 * `-p <playlist id>` Adds all songs in a playlist to download list.
 * `-s <song id>` Adds a song to download list.
+* `-t urllib2|wget` Choose a download tool. (default is wget)
 * `-h` Shows usage.
 
 `<song id>`, `<playlist id>` and `<album id>` can be retrived from URLs of Xiami.

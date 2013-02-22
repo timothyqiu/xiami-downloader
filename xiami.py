@@ -3,6 +3,7 @@
 
 import getopt
 import re
+import subprocess
 import sys
 import urllib
 import urllib2
@@ -12,7 +13,13 @@ URL_PATTERN_ID = 'http://www.xiami.com/song/playlist/id/%d'
 URL_PATTERN_SONG = '%s/object_name/default/object_id/0' % URL_PATTERN_ID
 URL_PATTERN_ALBUM = '%s/type/1' % URL_PATTERN_ID
 URL_PATTERN_PLAYLIST = '%s/type/3' % URL_PATTERN_ID
-USER_AGENT = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)'
+
+HEADERS = {
+    'User-Agent':
+    'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)',
+
+    'Referer': 'http://www.xiami.com/song/play'
+}
 
 
 def get_response(url):
@@ -21,8 +28,8 @@ def get_response(url):
     If sent without the headers, there may be a 503/403 error.
     """
     request = urllib2.Request(url)
-    request.add_header('User-Agent', USER_AGENT)  # Xiami now blocks python UA
-    request.add_header('Referer', 'http://www.xiami.com/song/play')
+    for header in HEADERS:
+        request.add_header(header, HEADERS[header])
 
     try:
         response = urllib2.urlopen(request)
@@ -77,12 +84,28 @@ def sanitize_filename(filename):
     return re.sub('[\/:*?<>|]', '_', filename)
 
 
-def download(url, dest):
+def get_downloader(name):
+    return {
+        'urllib2': urllib2_downloader,
+        'wget': wget_downloader
+    }.get(name, None)
+
+
+def urllib2_downloader(url, dest):
     try:
         with open(dest, 'wb') as output:
             output.write(get_response(url))
     except IOError as e:
         print e
+
+
+def wget_downloader(url, dest):
+    wget_opts = ['wget', url, '-O', dest]
+    for header in HEADERS:
+        wget_opts.append('--header=%s:%s' % (header, HEADERS[header]))
+    exit_code = subprocess.call(wget_opts)
+    if exit_code != 0:
+        raise Exception('wget exited abnormaly')
 
 
 def usage():
@@ -91,6 +114,7 @@ def usage():
         '    -a <album id>: Adds all songs in an album to download list.',
         '    -p <playlist id>: Adds all songs in a playlist to download list.',
         '    -s <song id>: Adds a song to download list.',
+        '    -t urllib2|wget: Choose a download tool. (default is wget)',
         '    -h : Shows usage.'
     ]
     print '\n'.join(message)
@@ -100,9 +124,10 @@ if __name__ == '__main__':
     print 'Xiami Music Preview Downloader v0.1.4'
 
     playlists = []
+    downloader = wget_downloader
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], 'ha:p:s:')
+        optlist, args = getopt.getopt(sys.argv[1:], 'ha:p:s:t:')
     except getopt.GetoptError as e:
         print e
         sys.exit(1)
@@ -114,8 +139,10 @@ if __name__ == '__main__':
             playlists.append(URL_PATTERN_PLAYLIST % int(value))
         elif key == '-s':
             playlists.append(URL_PATTERN_SONG % int(value))
+        elif key == '-t':
+            downloader = get_downloader(value)
 
-    if ('-h' in optlist) or (not playlists):
+    if ('-h' in optlist) or (not playlists) or (not downloader):
         usage()
         sys.exit(1)
 
@@ -136,5 +163,5 @@ if __name__ == '__main__':
         track = tracks[i]
         filename = '%s.mp3' % sanitize_filename(track['title'])
         url = track['url']
-        print '[%02d/%02d] Downloading %s...' % (i + 1, len(tracks), filename)
-        download(url, filename)
+        print '[%d/%d] Downloading %s...' % (i + 1, len(tracks), filename)
+        downloader(url, filename)
