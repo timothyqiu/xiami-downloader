@@ -142,6 +142,9 @@ if __name__ == '__main__':
         elif key == '-t':
             downloader = get_downloader(value)
 
+    if not downloader:
+        print 'No such downloader. Check your -t option.'
+
     if ('-h' in optlist) or (not playlists) or (not downloader):
         usage()
         sys.exit(1)
