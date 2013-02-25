@@ -92,7 +92,7 @@ def usage():
         '    -a <album id>: Adds all songs in an album to download list.',
         '    -p <playlist id>: Adds all songs in a playlist to download list.',
         '    -s <song id>: Adds a song to download list.',
-        '    -t urllib2|wget: Choose a download tool. (default is wget)',
+        '    -t urllib2|wget: Change the download tool.',
         '    -h : Shows usage.'
     ]
     print '\n'.join(message)
