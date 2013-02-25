@@ -3,11 +3,13 @@
 
 import getopt
 import re
-import subprocess
 import sys
 import urllib
 import urllib2
 import xml.etree.ElementTree as ET
+
+from xiami_dl import get_downloader
+
 
 URL_PATTERN_ID = 'http://www.xiami.com/song/playlist/id/%d'
 URL_PATTERN_SONG = '%s/object_name/default/object_id/0' % URL_PATTERN_ID
@@ -84,30 +86,6 @@ def sanitize_filename(filename):
     return re.sub('[\/:*?<>|]', '_', filename)
 
 
-def get_downloader(name):
-    return {
-        'urllib2': urllib2_downloader,
-        'wget': wget_downloader
-    }.get(name, None)
-
-
-def urllib2_downloader(url, dest):
-    try:
-        with open(dest, 'wb') as output:
-            output.write(get_response(url))
-    except IOError as e:
-        print e
-
-
-def wget_downloader(url, dest):
-    wget_opts = ['wget', url, '-O', dest]
-    for header in HEADERS:
-        wget_opts.append('--header=%s:%s' % (header, HEADERS[header]))
-    exit_code = subprocess.call(wget_opts)
-    if exit_code != 0:
-        raise Exception('wget exited abnormaly')
-
-
 def usage():
     message = [
         'Usage: %s [options]' % (sys.argv[0]),
@@ -124,7 +102,7 @@ if __name__ == '__main__':
     print 'Xiami Music Preview Downloader v0.1.4'
 
     playlists = []
-    downloader = wget_downloader
+    downloader = get_downloader()
 
     try:
         optlist, args = getopt.getopt(sys.argv[1:], 'ha:p:s:t:')
@@ -167,4 +145,4 @@ if __name__ == '__main__':
         filename = '%s.mp3' % sanitize_filename(track['title'])
         url = track['url']
         print '[%d/%d] Downloading %s...' % (i + 1, len(tracks), filename)
-        downloader(url, filename)
+        downloader(url, filename, HEADERS)
