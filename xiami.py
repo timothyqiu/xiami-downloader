@@ -84,7 +84,7 @@ def decode_location(location):
 
 
 def sanitize_filename(filename):
-    return re.sub('[\/:*?<>|]', '_', filename)
+    return re.sub(r'[\\/:*?<>|]', '_', filename)
 
 
 def usage():
