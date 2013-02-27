@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import getopt
+import os
 import re
 import sys
 import urllib
@@ -92,20 +93,68 @@ def usage():
         '    -a <album id>: Adds all songs in an album to download list.',
         '    -p <playlist id>: Adds all songs in a playlist to download list.',
         '    -s <song id>: Adds a song to download list.',
+        '    -f : Force mode. Overwrite existing files without prompt.',
         '    -t urllib2|wget: Change the download tool.',
         '    -h : Shows usage.'
     ]
     print '\n'.join(message)
 
 
+# Refer: http://code.activestate.com/recipes/577058/
+def query_yes_no(question, default="yes"):
+    """Ask a yes/no question via raw_input() and return their answer.
+
+    "question" is a string that is presented to the user.
+    "default" is the presumed answer if the user just hits <Enter>.
+        It must be "yes" (the default), "no" or None (meaning
+        an answer is required of the user).
+
+    The "answer" return value is one of "yes" or "no".
+    """
+    valid = {"yes": "yes", "y": "yes", "ye": "yes",
+             "no": "no", "n": "no"}
+    if default is None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while True:
+        sys.stdout.write(question + prompt)
+        choice = raw_input().lower()
+        if default is not None and choice == '':
+            return default
+        elif choice in valid.keys():
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no' "
+                             "(or 'y' or 'n').\n")
+
+
+class XiamiDownloader:
+    def __init__(self):
+        self.force_mode = False
+        self.downloader = get_downloader()
+
+    def download(self, url, filename):
+        if not self.force_mode and os.path.exists(filename):
+            if query_yes_no('File already exists. Skip downloading?') == 'yes':
+                return
+        self.downloader(url, filename, HEADERS)
+
+
 if __name__ == '__main__':
-    print 'Xiami Music Preview Downloader v0.1.4'
+    print 'Xiami Music Preview Downloader v0.1.5'
 
     playlists = []
-    downloader = get_downloader()
+
+    xiami = XiamiDownloader()
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], 'ha:p:s:t:')
+        optlist, args = getopt.getopt(sys.argv[1:], 'ha:p:s:t:f')
     except getopt.GetoptError as e:
         print e
         sys.exit(1)
@@ -118,12 +167,14 @@ if __name__ == '__main__':
         elif key == '-s':
             playlists.append(URL_PATTERN_SONG % int(value))
         elif key == '-t':
-            downloader = get_downloader(value)
+            xiami.downloader = get_downloader(value)
+        elif key == '-f':
+            xiami.force_mode = True
 
-    if not downloader:
+    if not xiami.downloader:
         print 'No such downloader. Check your -t option.'
 
-    if ('-h' in optlist) or (not playlists) or (not downloader):
+    if ('-h' in optlist) or (not playlists) or (not xiami.downloader):
         usage()
         sys.exit(1)
 
@@ -144,5 +195,5 @@ if __name__ == '__main__':
         track = tracks[i]
         filename = '%s.mp3' % sanitize_filename(track['title'])
         url = track['url']
-        print '[%d/%d] Downloading %s...' % (i + 1, len(tracks), filename)
-        downloader(url, filename, HEADERS)
+        print '\n[%d/%d] %s' % (i + 1, len(tracks), filename)
+        xiami.download(url, filename)
