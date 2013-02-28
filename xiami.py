@@ -173,8 +173,9 @@ if __name__ == '__main__':
 
     if not xiami.downloader:
         print 'No such downloader. Check your -t option.'
+        sys.exit(1)
 
-    if ('-h' in optlist) or (not playlists) or (not xiami.downloader):
+    if ('-h' in optlist) or (not playlists):
         usage()
         sys.exit(1)
 
