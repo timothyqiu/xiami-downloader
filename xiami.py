@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
-import getopt
+import argparse
 import os
 import re
 import sys
@@ -11,6 +11,8 @@ import xml.etree.ElementTree as ET
 
 from xiami_dl import get_downloader
 
+
+VERSION = '0.1.6'
 
 URL_PATTERN_ID = 'http://www.xiami.com/song/playlist/id/%d'
 URL_PATTERN_SONG = '%s/object_name/default/object_id/0' % URL_PATTERN_ID
@@ -87,19 +89,6 @@ def sanitize_filename(filename):
     return re.sub(r'[\\/:*?<>|]', '_', filename)
 
 
-def usage():
-    message = [
-        'Usage: %s [options]' % (sys.argv[0]),
-        '    -a <album id>: Adds all songs in an album to download list.',
-        '    -p <playlist id>: Adds all songs in a playlist to download list.',
-        '    -s <song id>: Adds a song to download list.',
-        '    -f : Force mode. Overwrite existing files without prompt.',
-        '    -t urllib2|wget: Change the download tool.',
-        '    -h : Shows usage.'
-    ]
-    print '\n'.join(message)
-
-
 # Refer: http://code.activestate.com/recipes/577058/
 def query_yes_no(question, default="yes"):
     """Ask a yes/no question via raw_input() and return their answer.
@@ -134,10 +123,34 @@ def query_yes_no(question, default="yes"):
                              "(or 'y' or 'n').\n")
 
 
+def parse_arguments():
+
+    note = 'The following SONG, ALBUM, and PLAYLIST are IDs which can be' \
+           'obtained from the URL of corresponding web page.'
+
+    parser = argparse.ArgumentParser(description=note)
+
+    parser.add_argument('-v', '--version', action='version', version=VERSION)
+    parser.add_argument('-f', '--force', action='store_true',
+                        help='overwrite existing files without prompt')
+    parser.add_argument('-t', '--tool', choices=['wget', 'urllib2'],
+                        help='change the download tool')
+    parser.add_argument('-s', '--song', action='append',
+                        help='adds songs for download',
+                        type=int, nargs='+')
+    parser.add_argument('-a', '--album', action='append',
+                        help='adds all songs in the albums for download',
+                        type=int, nargs='+')
+    parser.add_argument('-p', '--playlist', action='append',
+                        help='adds all songs in the playlists for download',
+                        type=int, nargs='+')
+
+    return parser.parse_args()
+
+
 class XiamiDownloader:
     def __init__(self):
         self.force_mode = False
-        self.downloader = get_downloader()
 
     def download(self, url, filename):
         if not self.force_mode and os.path.exists(filename):
@@ -146,43 +159,30 @@ class XiamiDownloader:
         self.downloader(url, filename, HEADERS)
 
 
-if __name__ == '__main__':
-    print 'Xiami Music Preview Downloader v0.1.5'
+def build_url_list(pattern, l):
+    return [pattern % item for group in l for item in group]
 
-    playlists = []
+
+if __name__ == '__main__':
+
+    args = parse_arguments()
 
     xiami = XiamiDownloader()
+    xiami.downloader = get_downloader(args.tool)
+    xiami.force_mode = args.force
 
-    try:
-        optlist, args = getopt.getopt(sys.argv[1:], 'ha:p:s:t:f')
-    except getopt.GetoptError as e:
-        print e
-        sys.exit(1)
+    urls = []
 
-    for key, value in optlist:
-        if key == '-a':
-            playlists.append(URL_PATTERN_ALBUM % int(value))
-        elif key == '-p':
-            playlists.append(URL_PATTERN_PLAYLIST % int(value))
-        elif key == '-s':
-            playlists.append(URL_PATTERN_SONG % int(value))
-        elif key == '-t':
-            xiami.downloader = get_downloader(value)
-        elif key == '-f':
-            xiami.force_mode = True
-
-    if not xiami.downloader:
-        print 'No such downloader. Check your -t option.'
-        sys.exit(1)
-
-    if ('-h' in optlist) or (not playlists):
-        usage()
-        sys.exit(1)
-
-    tracks = []
+    if args.song:
+        urls.extend(build_url_list(URL_PATTERN_SONG, args.song))
+    if args.album:
+        urls.extend(build_url_list(URL_PATTERN_ALBUM, args.album))
+    if args.playlist:
+        urls.extend(build_url_list(URL_PATTERN_PLAYLIST, args.playlist))
 
     # parse playlist xml for a list of track info
-    for playlist_url in playlists:
+    tracks = []
+    for playlist_url in urls:
         for url in get_playlist_from_url(playlist_url):
             tracks.append(url)
 
