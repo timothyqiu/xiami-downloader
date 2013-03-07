@@ -27,4 +27,37 @@ To download the album _Mahōtsukai no Yoru OST_, first refer to the url <http://
 
     xiami.py -a 511682
 
+
+---
+
+# 虾米音乐试听下载器
+
+从[虾米网][1]上下载音乐试听的小工具。
+
+注：这是一个 Python 2 脚本
+
+## 使用方法
+
+    xiami.py [选项]
+
+## 选项
+
+* `-a <专辑ID>` 下载该专辑中的所有歌曲。
+* `-p <精选集ID>` 下载该精选集中的所有歌曲。
+* `-s <歌曲ID>` 下载该歌曲。
+* `-f` 强制模式。不经确认直接覆盖重名文件。
+* `-t urllib2|wget` 修改下载工具。
+* `-h` 显示用法。
+
+`<歌曲ID>`、`<精选集ID>` 及 `<专辑ID>` 都可以从对应虾米页面的 URL 中找出。
+
+默认下载工具在 Windows 上是内置的 urllib2，其它平台则是 wget。
+
+## 示例
+
+例如要下载专辑《魔法使いの夜 オリジナルサウンドトラック》，首先从其 URL <http://www.xiami.com/album/511682> 中找出专辑 ID：__511682__。然后使用如下命令下载：
+
+    xiami.py -a 511682
+
+
 [1]: http://www.xiami.com "虾米"
