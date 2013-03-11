@@ -58,7 +58,9 @@ def parse_playlist(playlist):
     return [
         {
             'title': track.find('{http://xspf.org/ns/0/}title').text,
-            'location': track.find('{http://xspf.org/ns/0/}location').text
+            'location': track.find('{http://xspf.org/ns/0/}location').text,
+            'lyric': track.find('{http://xspf.org/ns/0/}lyric').text,
+            'pic': track.find('{http://xspf.org/ns/0/}pic').text
         }
         for track in xml.iter('{http://xspf.org/ns/0/}track')
     ]
@@ -194,7 +196,22 @@ if __name__ == '__main__':
 
     for i in xrange(len(tracks)):
         track = tracks[i]
-        filename = '%s.mp3' % sanitize_filename(track['title'])
+        basename="%s." % sanitize_filename(track['title'])
+        filename = basename+'mp3'
         url = track['url']
         print '\n[%d/%d] %s' % (i + 1, len(tracks), filename)
         xiami.download(url, filename)
+
+        picurl=track['pic']
+        #get bigger pic
+        picurl=picurl.split('.')
+        picurl[-2]=picurl[-2][:-1]+'4'
+        picname=basename+picurl[-1]
+        picurl='.'.join(picurl)
+        xiami.download(picurl, picname)
+
+        lrcurl=track['lyric']
+        lrcname=basename+'lrc'
+        xiami.download(lrcurl,lrcname)
+        
+        
