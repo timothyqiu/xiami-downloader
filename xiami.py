@@ -14,9 +14,8 @@ from xiami_dl import get_downloader
 # ID3 tags support depends on Mutagen
 try:
     import mutagen
-    from mutagen.mp3 import MP3
-    from mutagen.id3 import ID3,APIC,error,TIT2,TALB,TPE1,USLT
-    from mutagen.easyid3 import EasyID3
+    import mutagen.mp3
+    import mutagen.id3 as id3
 except:
     mutagen = None
     print "No mutagen available. ID3 tags won't be written."
@@ -189,15 +188,15 @@ def add_id3_tag(filename, track):
     print 'Getting lyrics...'
     lyric = get_response(track['lyric'])
 
-    musicfile = MP3(filename, ID3=ID3)
+    musicfile = mutagen.mp3.MP3(filename, ID3=mutagen.id3.ID3)
     try:
         musicfile.add_tags()
-    except error:
+    except mutagen.id3.error:
         pass
 
     musicfile.tags.add(
         #Cover img
-        APIC(
+        id3.APIC(
             encoding=3, #utf-8
             mime='image/jpeg',
             type=3, # is cover
@@ -206,27 +205,27 @@ def add_id3_tag(filename, track):
 
     musicfile.tags.add(
         #Title
-        TIT2(
+        id3.TIT2(
             encoding=3,
             text=track['title']
         )
     )
     musicfile.tags.add(
         #Album name
-        TALB(
+        id3.TALB(
             encoding=3,
             text=track['album']
         )
     )
     musicfile.tags.add(
         #Artist
-        TPE1(
+        id3.TPE1(
             encoding=3,
             text=track['artist']
         )
     )
     musicfile.tags.add(
-        USLT(
+        id3.USLT(
             encoding=3,
             desc=u'desc',
             text=lyric
