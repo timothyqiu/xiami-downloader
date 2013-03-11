@@ -221,7 +221,6 @@ if __name__ == '__main__':
         xiami.download(lrcurl,lrcname)
 
         musicfile=MP3(filename,ID3=ID3)
-        print filename
         try:
             musicfile.add_tags()
         except error:
@@ -237,29 +236,33 @@ if __name__ == '__main__':
             lyric+=']'.join(line.split(']')[1:])
         tmpfp.close()
         musicfile.tags.add(
+            #Cover img
             APIC(
                 encoding=3, #utf-8
                 mime='image/png',  #png or jpg
                 type=3, # is cover
                 desc=u'Cover',
                 data=image))
-        print picname
+
         musicfile.tags.add(
+            #Title
             TIT2(
                 encoding=3,
-                text=basename.decode('utf-8') #title
+                text=basename.decode('utf-8')
             )
         )
         musicfile.tags.add(
+            #Album name
             TALB(
                 encoding=3,
-                text=track['album'].decode('utf-8') #album
+                text=track['album'].decode('utf-8')
             )
         )
         musicfile.tags.add(
+            #Artist
             TPE1(
                 encoding=3,
-                text=track['artist'].decode('utf-8') #artist
+                text=track['artist'].decode('utf-8')
             )
         )
         musicfile.tags.add(
