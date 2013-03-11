@@ -172,8 +172,9 @@ class XiamiDownloader:
     def download(self, url, filename):
         if not self.force_mode and os.path.exists(filename):
             if query_yes_no('File already exists. Skip downloading?') == 'yes':
-                return
+                return False
         self.downloader(url, filename, HEADERS)
+        return True
 
 
 def build_url_list(pattern, l):
@@ -197,9 +198,9 @@ def add_id3_tag(filename, track):
     musicfile.tags.add(
         #Cover img
         id3.APIC(
-            encoding=3, #utf-8
+            encoding=3,  # utf-8
             mime='image/jpeg',
-            type=3, # is cover
+            type=3,  # is cover
             desc=u'Cover',
             data=image))
 
@@ -227,8 +228,8 @@ def add_id3_tag(filename, track):
     musicfile.tags.add(
         id3.USLT(
             encoding=3,
-            desc=u'desc',
-            text=lyric
+            desc=u'Lyrics',
+            text=unicode(lyric, 'utf-8', errors='replace')
         )
     )
     print musicfile.pprint()
@@ -266,10 +267,11 @@ if __name__ == '__main__':
 
     for i in xrange(len(tracks)):
         track = tracks[i]
-        filename ='%s.mp3' % sanitize_filename(track['title'])
+        filename = '%s.mp3' % sanitize_filename(track['title'])
         url = track['url']
         print '\n[%d/%d] %s' % (i + 1, len(tracks), filename)
-        xiami.download(url, filename)
 
-        if mutagen and (not args.no_tag):
+        downloaded = xiami.download(url, filename)
+
+        if mutagen and downloaded and (not args.no_tag):
             add_id3_tag(filename, track)
