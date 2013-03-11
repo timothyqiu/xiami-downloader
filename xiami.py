@@ -11,6 +11,10 @@ import xml.etree.ElementTree as ET
 
 from xiami_dl import get_downloader
 
+from mutagen.mp3 import MP3
+from mutagen.id3 import ID3,APIC,error,TIT2,TALB,TPE1,USLT
+from mutagen.easyid3 import EasyID3
+
 
 VERSION = '0.1.6'
 
@@ -60,7 +64,9 @@ def parse_playlist(playlist):
             'title': track.find('{http://xspf.org/ns/0/}title').text,
             'location': track.find('{http://xspf.org/ns/0/}location').text,
             'lyric': track.find('{http://xspf.org/ns/0/}lyric').text,
-            'pic': track.find('{http://xspf.org/ns/0/}pic').text
+            'pic': track.find('{http://xspf.org/ns/0/}pic').text,
+            'artist': track.find('{http://xspf.org/ns/0/}artist').text,
+            'album': track.find('{http://xspf.org/ns/0/}album_name').text
         }
         for track in xml.iter('{http://xspf.org/ns/0/}track')
     ]
@@ -196,8 +202,8 @@ if __name__ == '__main__':
 
     for i in xrange(len(tracks)):
         track = tracks[i]
-        basename="%s." % sanitize_filename(track['title'])
-        filename = basename+'mp3'
+        basename="%s" % sanitize_filename(track['title'])
+        filename = basename+'.mp3'
         url = track['url']
         print '\n[%d/%d] %s' % (i + 1, len(tracks), filename)
         xiami.download(url, filename)
@@ -206,12 +212,69 @@ if __name__ == '__main__':
         #get bigger pic
         picurl=picurl.split('.')
         picurl[-2]=picurl[-2][:-1]+'4'
-        picname=basename+picurl[-1]
+        picname=basename+'.'+picurl[-1]
         picurl='.'.join(picurl)
         xiami.download(picurl, picname)
 
         lrcurl=track['lyric']
-        lrcname=basename+'lrc'
+        lrcname=basename+'.lrc'
         xiami.download(lrcurl,lrcname)
+
+        musicfile=MP3(filename,ID3=ID3)
+        print filename
+        try:
+            musicfile.add_tags()
+        except error:
+            pass
+        
+        tmpfp=open(picname)
+        image=tmpfp.read()
+        tmpfp.close()
+        tmpfp=open(lrcname)
+        lyric_lines=tmpfp.readlines()
+        lyric=''
+        for line in lyric_lines:
+            lyric+=']'.join(line.split(']')[1:])
+        tmpfp.close()
+        musicfile.tags.add(
+            APIC(
+                encoding=3, #utf-8
+                mime='image/png',  #png or jpg
+                type=3, # is cover
+                desc=u'Cover',
+                data=image))
+        print picname
+        musicfile.tags.add(
+            TIT2(
+                encoding=3,
+                text=basename.decode('utf-8') #title
+            )
+        )
+        musicfile.tags.add(
+            TALB(
+                encoding=3,
+                text=track['album'].decode('utf-8') #album
+            )
+        )
+        musicfile.tags.add(
+            TPE1(
+                encoding=3,
+                text=track['artist'].decode('utf-8') #artist
+            )
+        )
+        musicfile.tags.add(
+            USLT(
+                encoding=3,
+                desc=u'desc',
+                text=lyric.decode('utf-8') #artist
+            )
+        )
+        print "downloaded file ",musicfile.pprint()
+        musicfile.save()
+        os.remove(picname)
+        os.remove(lrcname)
+        
+
+        
         
         
