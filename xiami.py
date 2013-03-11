@@ -15,7 +15,7 @@ from xiami_dl import get_downloader
 try:
     import mutagen
     import mutagen.mp3
-    import mutagen.id3 as id3
+    import mutagen.id3
 except:
     mutagen = None
     print "No mutagen available. ID3 tags won't be written."
@@ -189,49 +189,46 @@ def add_id3_tag(filename, track):
     print 'Getting lyrics...'
     lyric = get_response(track['lyric'])
 
-    musicfile = mutagen.mp3.MP3(filename, ID3=mutagen.id3.ID3)
+    musicfile = mutagen.mp3.MP3(filename)
     try:
         musicfile.add_tags()
     except mutagen.id3.error:
-        pass
+        pass  # an ID3 tag already exists
 
-    musicfile.tags.add(
-        #Cover img
-        id3.APIC(
-            encoding=3,  # utf-8
-            mime='image/jpeg',
-            type=3,  # is cover
-            desc=u'Cover',
-            data=image))
+    # Track Title
+    musicfile.tags.add(mutagen.id3.TIT2(
+        encoding=3,
+        text=track['title']
+    ))
 
-    musicfile.tags.add(
-        #Title
-        id3.TIT2(
-            encoding=3,
-            text=track['title']
-        )
-    )
-    musicfile.tags.add(
-        #Album name
-        id3.TALB(
-            encoding=3,
-            text=track['album']
-        )
-    )
-    musicfile.tags.add(
-        #Artist
-        id3.TPE1(
-            encoding=3,
-            text=track['artist']
-        )
-    )
-    musicfile.tags.add(
-        id3.USLT(
-            encoding=3,
-            desc=u'Lyrics',
-            text=unicode(lyric, 'utf-8', errors='replace')
-        )
-    )
+    # Album Title
+    musicfile.tags.add(mutagen.id3.TALB(
+        encoding=3,
+        text=track['album']
+    ))
+
+    # Lead Artist/Performer/Soloist/Group
+    musicfile.tags.add(mutagen.id3.TPE1(
+        encoding=3,
+        text=track['artist']
+    ))
+
+    # Unsynchronised lyrics/text transcription
+    musicfile.tags.add(mutagen.id3.USLT(
+        encoding=3,
+        desc=u'Lyrics',
+        text=unicode(lyric, 'utf-8', errors='replace')
+    ))
+
+    # Attached Picture
+    musicfile.tags.add(mutagen.id3.APIC(
+        encoding=3,         # utf-8
+        mime='image/jpeg',
+        type=3,             # album front cover
+        desc=u'Cover',
+        data=image
+    ))
+
     print musicfile.pprint()
     musicfile.save()
 
