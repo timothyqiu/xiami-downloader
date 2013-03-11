@@ -4,6 +4,10 @@ A simple tool for downloading music previews from [Xiami.com][1]
 
 Note: this is a python script using python 2.
 
+## Dependency
+
+* Optionally depends on `mutagen` module for ID3 tag support.
+
 ## Usage
 
     xiami.py [options]
@@ -35,6 +39,10 @@ To download the album _Mahōtsukai no Yoru OST_, first refer to the url <http://
 从[虾米网][1]上下载音乐试听的小工具。
 
 注：这是一个 Python 2 脚本
+
+## 依赖
+
+* 可选择依赖于 `mutagen` 模块，由其提供 ID3 支持。
 
 ## 使用方法
 

@@ -11,9 +11,15 @@ import xml.etree.ElementTree as ET
 
 from xiami_dl import get_downloader
 
-from mutagen.mp3 import MP3
-from mutagen.id3 import ID3,APIC,error,TIT2,TALB,TPE1,USLT
-from mutagen.easyid3 import EasyID3
+# ID3 tags support depends on Mutagen
+try:
+    import mutagen
+    from mutagen.mp3 import MP3
+    from mutagen.id3 import ID3,APIC,error,TIT2,TALB,TPE1,USLT
+    from mutagen.easyid3 import EasyID3
+except:
+    mutagen = None
+    print "No mutagen available. ID3 tags won't be written."
 
 
 VERSION = '0.1.6'
@@ -50,7 +56,9 @@ def get_response(url):
 
 
 def get_playlist_from_url(url):
-    return parse_playlist(get_response(url))
+    tracks = parse_playlist(get_response(url))
+    tracks = [{key: unicode(track[key]) for key in track} for track in tracks]
+    return tracks
 
 
 def parse_playlist(playlist):
@@ -152,6 +160,8 @@ def parse_arguments():
     parser.add_argument('-p', '--playlist', action='append',
                         help='adds all songs in the playlists for download',
                         type=int, nargs='+')
+    parser.add_argument('--no-tag', action='store_true',
+                        help='skip adding ID3 tag')
 
     return parser.parse_args()
 
@@ -169,6 +179,61 @@ class XiamiDownloader:
 
 def build_url_list(pattern, l):
     return [pattern % item for group in l for item in group]
+
+
+def add_id3_tag(filename, track):
+    print 'Tagging...'
+
+    print 'Getting album cover...'
+    image = get_response(track['pic'])
+    print 'Getting lyrics...'
+    lyric = get_response(track['lyric'])
+
+    musicfile = MP3(filename, ID3=ID3)
+    try:
+        musicfile.add_tags()
+    except error:
+        pass
+
+    musicfile.tags.add(
+        #Cover img
+        APIC(
+            encoding=3, #utf-8
+            mime='image/jpeg',
+            type=3, # is cover
+            desc=u'Cover',
+            data=image))
+
+    musicfile.tags.add(
+        #Title
+        TIT2(
+            encoding=3,
+            text=track['title']
+        )
+    )
+    musicfile.tags.add(
+        #Album name
+        TALB(
+            encoding=3,
+            text=track['album']
+        )
+    )
+    musicfile.tags.add(
+        #Artist
+        TPE1(
+            encoding=3,
+            text=track['artist']
+        )
+    )
+    musicfile.tags.add(
+        USLT(
+            encoding=3,
+            desc=u'desc',
+            text=lyric
+        )
+    )
+    print musicfile.pprint()
+    musicfile.save()
 
 
 if __name__ == '__main__':
@@ -202,82 +267,10 @@ if __name__ == '__main__':
 
     for i in xrange(len(tracks)):
         track = tracks[i]
-        basename="%s" % sanitize_filename(track['title'])
-        filename = basename+'.mp3'
+        filename ='%s.mp3' % sanitize_filename(track['title'])
         url = track['url']
         print '\n[%d/%d] %s' % (i + 1, len(tracks), filename)
         xiami.download(url, filename)
 
-        picurl=track['pic']
-        #get bigger pic
-        picurl=picurl.split('.')
-        picurl[-2]=picurl[-2][:-1]+'4'
-        picname=basename+'.'+picurl[-1]
-        picurl='.'.join(picurl)
-        xiami.download(picurl, picname)
-
-        lrcurl=track['lyric']
-        lrcname=basename+'.lrc'
-        xiami.download(lrcurl,lrcname)
-
-        musicfile=MP3(filename,ID3=ID3)
-        try:
-            musicfile.add_tags()
-        except error:
-            pass
-        
-        tmpfp=open(picname)
-        image=tmpfp.read()
-        tmpfp.close()
-        tmpfp=open(lrcname)
-        lyric_lines=tmpfp.readlines()
-        lyric=''
-        for line in lyric_lines:
-            lyric+=']'.join(line.split(']')[1:])
-        tmpfp.close()
-        musicfile.tags.add(
-            #Cover img
-            APIC(
-                encoding=3, #utf-8
-                mime='image/png',  #png or jpg
-                type=3, # is cover
-                desc=u'Cover',
-                data=image))
-
-        musicfile.tags.add(
-            #Title
-            TIT2(
-                encoding=3,
-                text=basename.decode('utf-8')
-            )
-        )
-        musicfile.tags.add(
-            #Album name
-            TALB(
-                encoding=3,
-                text=track['album'].decode('utf-8')
-            )
-        )
-        musicfile.tags.add(
-            #Artist
-            TPE1(
-                encoding=3,
-                text=track['artist'].decode('utf-8')
-            )
-        )
-        musicfile.tags.add(
-            USLT(
-                encoding=3,
-                desc=u'desc',
-                text=lyric.decode('utf-8') #artist
-            )
-        )
-        print "downloaded file ",musicfile.pprint()
-        musicfile.save()
-        os.remove(picname)
-        os.remove(lrcname)
-        
-
-        
-        
-        
+        if mutagen and (not args.no_tag):
+            add_id3_tag(filename, track)
