@@ -18,7 +18,7 @@ try:
     import mutagen.id3
 except:
     mutagen = None
-    print "No mutagen available. ID3 tags won't be written."
+    sys.stderr.write("No mutagen available. ID3 tags won't be written.")
 
 
 VERSION = '0.1.6'
@@ -36,6 +36,18 @@ HEADERS = {
 }
 
 
+# Output / Redirected Output
+default_encoding = sys.stdout.encoding or sys.getdefaultencoding()
+if not default_encoding or default_encoding.lower() == 'ascii':
+    default_encoding = 'utf-8'
+
+
+def println(text):
+    if type(text) == unicode:
+        text = text.encode(default_encoding, errors='replace')
+    sys.stdout.write(text + '\n')
+
+
 def get_response(url):
     """ Get HTTP response as text
 
@@ -49,7 +61,7 @@ def get_response(url):
         response = urllib2.urlopen(request)
         return response.read()
     except urllib2.URLError as e:
-        print e
+        println(e)
 
     return ''
 
@@ -182,11 +194,11 @@ def build_url_list(pattern, l):
 
 
 def add_id3_tag(filename, track):
-    print 'Tagging...'
+    println('Tagging...')
 
-    print 'Getting album cover...'
+    println('Getting album cover...')
     image = get_response(track['pic'])
-    print 'Getting lyrics...'
+    println('Getting lyrics...')
     lyric = get_response(track['lyric'])
 
     musicfile = mutagen.mp3.MP3(filename)
@@ -229,7 +241,7 @@ def add_id3_tag(filename, track):
         data=image
     ))
 
-    print musicfile.pprint()
+    println(musicfile.pprint())
     musicfile.save()
 
 
@@ -256,7 +268,7 @@ if __name__ == '__main__':
         for url in get_playlist_from_url(playlist_url):
             tracks.append(url)
 
-    print '%d file(s) to download' % len(tracks)
+    println('%d file(s) to download' % len(tracks))
 
     for i in xrange(len(tracks)):
         track = tracks[i]
@@ -265,10 +277,9 @@ if __name__ == '__main__':
     for i in xrange(len(tracks)):
         track = tracks[i]
         filename = '%s.mp3' % sanitize_filename(track['title'])
-        url = track['url']
-        print '\n[%d/%d] %s' % (i + 1, len(tracks), filename)
+        println('\n[%d/%d] %s' % (i + 1, len(tracks), filename))
 
-        downloaded = xiami.download(url, filename)
+        downloaded = xiami.download(track['url'], filename)
 
         if mutagen and downloaded and (not args.no_tag):
             add_id3_tag(filename, track)
