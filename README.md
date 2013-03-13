@@ -20,6 +20,7 @@ Note: this is a python script using python 2.
 * `-f` Force mode. Overwrite existing files without prompt.
 * `-t urllib2|wget` Change the download tool.
 * `-h` Shows usage.
+* `--no-tag` do not add tag.
 
 `<song id>`, `<playlist id>` and `<album id>` can be retrived from URLs of Xiami.
 
@@ -56,6 +57,7 @@ To download the album _Mahōtsukai no Yoru OST_, first refer to the url <http://
 * `-f` 强制模式。不经确认直接覆盖重名文件。
 * `-t urllib2|wget` 修改下载工具。
 * `-h` 显示用法。
+* `--no-tag` 不添加 ID3 Tag。
 
 `<歌曲ID>`、`<精选集ID>` 及 `<专辑ID>` 都可以从对应虾米页面的 URL 中找出。
 
@@ -63,7 +65,7 @@ To download the album _Mahōtsukai no Yoru OST_, first refer to the url <http://
 
 ## 示例
 
-例如要下载专辑《魔法使いの夜 オリジナルサウンドトラック》，首先从其 URL <http://www.xiami.com/album/511682> 中找出专辑 ID：__511682__。然后使用如下命令下载：
+例如要下载专辑《魔法使いの夜 オリジナルサウンドトラック》，首先从其 URL <http://www.xiami.com/album/511682> 中找出专辑 ID： __511682__。然后使用如下命令下载：
 
     xiami.py -a 511682
 
