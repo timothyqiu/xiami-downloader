@@ -32,6 +32,10 @@ To download the album _Mahōtsukai no Yoru OST_, first refer to the url <http://
 
     xiami.py -a 511682
 
+## License
+
+This software is distributed under the [MIT License][2].
+
 
 ---
 
@@ -69,5 +73,9 @@ To download the album _Mahōtsukai no Yoru OST_, first refer to the url <http://
 
     xiami.py -a 511682
 
+## 许可
+
+Xiami Music Preview Downloader 使用 [MIT License][2] 发布。
 
 [1]: http://www.xiami.com "虾米"
+[2]: http://opensource.org/licenses/MIT "The MIT License"
