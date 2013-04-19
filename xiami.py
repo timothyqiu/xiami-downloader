@@ -181,6 +181,11 @@ class XiamiDownloader:
     def __init__(self):
         self.force_mode = False
 
+    def format_filename(self, trackinfo):
+        return sanitize_filename(
+            '%s - %s.mp3' % (trackinfo['title'], trackinfo['artist'])
+        )
+
     def download(self, url, filename):
         if not self.force_mode and os.path.exists(filename):
             if query_yes_no('File already exists. Skip downloading?') == 'yes':
@@ -276,7 +281,7 @@ if __name__ == '__main__':
 
     for i in xrange(len(tracks)):
         track = tracks[i]
-        filename = '%s.mp3' % sanitize_filename(track['title'])
+        filename = xiami.format_filename(track)
         println('\n[%d/%d] %s' % (i + 1, len(tracks), filename))
 
         downloaded = xiami.download(track['url'], filename)
