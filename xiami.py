@@ -18,7 +18,7 @@ try:
     import mutagen.id3
 except:
     mutagen = None
-    sys.stderr.write("No mutagen available. ID3 tags won't be written.")
+    sys.stderr.write("No mutagen available. ID3 tags won't be written.\n")
 
 
 VERSION = '0.1.7'
