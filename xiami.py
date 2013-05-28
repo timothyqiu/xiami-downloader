@@ -21,7 +21,7 @@ except:
     sys.stderr.write("No mutagen available. ID3 tags won't be written.\n")
 
 
-VERSION = '0.1.7'
+VERSION = '0.1.8'
 
 URL_PATTERN_ID = 'http://www.xiami.com/song/playlist/id/%d'
 URL_PATTERN_SONG = '%s/object_name/default/object_id/0' % URL_PATTERN_ID
@@ -198,11 +198,22 @@ def build_url_list(pattern, l):
     return [pattern % item for group in l for item in group]
 
 
+# Get album image url in a specific size
+def get_album_image_url(basic, size=None):
+    if size:
+        rep = r'\1_%d\2' % size
+    else:
+        rep = r'\1\2'
+    return re.sub(r'^(.+)_\d(\..+)$', rep, basic)
+
+
 def add_id3_tag(filename, track):
     println('Tagging...')
 
     println('Getting album cover...')
-    image = get_response(track['pic'])
+    # 4 for a reasonable size, or leave it None for the largest...
+    image = get_response(get_album_image_url(track['pic'], 4))
+
     println('Getting lyrics...')
     lyric = get_response(track['lyric'])
 
