@@ -21,7 +21,7 @@ except:
     sys.stderr.write("No mutagen available. ID3 tags won't be written.\n")
 
 
-VERSION = '0.1.8'
+VERSION = '0.1.9'
 
 URL_PATTERN_ID = 'http://www.xiami.com/song/playlist/id/%d'
 URL_PATTERN_SONG = '%s/object_name/default/object_id/0' % URL_PATTERN_ID
@@ -45,7 +45,7 @@ if not default_encoding or default_encoding.lower() == 'ascii':
 def println(text):
     if type(text) == unicode:
         text = text.encode(default_encoding, errors='replace')
-    sys.stdout.write(text + '\n')
+    sys.stdout.write(str(text) + '\n')
 
 
 def get_response(url):
@@ -62,8 +62,7 @@ def get_response(url):
         return response.read()
     except urllib2.URLError as e:
         println(e)
-
-    return ''
+        return ''
 
 
 def get_playlist_from_url(url):
@@ -249,13 +248,14 @@ def add_id3_tag(filename, track):
     ))
 
     # Attached Picture
-    musicfile.tags.add(mutagen.id3.APIC(
-        encoding=3,         # utf-8
-        mime='image/jpeg',
-        type=3,             # album front cover
-        desc=u'Cover',
-        data=image
-    ))
+    if image:
+        musicfile.tags.add(mutagen.id3.APIC(
+            encoding=3,         # utf-8
+            mime='image/jpeg',
+            type=3,             # album front cover
+            desc=u'Cover',
+            data=image
+        ))
 
     println(musicfile.pprint())
     musicfile.save()
