@@ -165,3 +165,6 @@ pip-log.txt
 *.mp3
 *.lrc
 *.jpg
+
+# Third-party component
+/mutagen*
