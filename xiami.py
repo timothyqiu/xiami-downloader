@@ -200,7 +200,7 @@ class XiamiDownloader:
         )
 
     def format_output(self, folder, filename):
-        return '%s/%s' % (folder, filename)
+        return os.path.join(folder, filename)
 
     def download(self, url, filename):
         if not self.force_mode and os.path.exists(filename):
