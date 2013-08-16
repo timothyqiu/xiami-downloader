@@ -21,6 +21,7 @@ Note: this is a python script using python 2.
 * `-t urllib2|wget` Change the download tool.
 * `-h` Shows usage.
 * `--no-tag` do not add tag.
+* `--directory` save all downloads into the directory.
 
 `<song id>`, `<playlist id>` and `<album id>` can be retrived from URLs of Xiami.
 
@@ -62,6 +63,7 @@ This software is distributed under the [MIT License][2].
 * `-t urllib2|wget` 修改下载工具。
 * `-h` 显示用法。
 * `--no-tag` 不添加 ID3 Tag。
+* `--directory` 将下载到的文件放入该文件夹中。
 
 `<歌曲ID>`、`<精选集ID>` 及 `<专辑ID>` 都可以从对应虾米页面的 URL 中找出。
 

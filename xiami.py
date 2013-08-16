@@ -28,8 +28,6 @@ URL_PATTERN_SONG = '%s/object_name/default/object_id/0' % URL_PATTERN_ID
 URL_PATTERN_ALBUM = '%s/type/1' % URL_PATTERN_ID
 URL_PATTERN_PLAYLIST = '%s/type/3' % URL_PATTERN_ID
 
-DOWNLOAD_FOLDER_NAME = 'xiami'
-
 HEADERS = {
     'User-Agent':
     'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)',
@@ -174,6 +172,8 @@ def parse_arguments():
                         type=int, nargs='+')
     parser.add_argument('--no-tag', action='store_true',
                         help='skip adding ID3 tag')
+    parser.add_argument('--directory', default='',
+                        help='save downloads to the directory')
 
     return parser.parse_args()
 
@@ -193,8 +193,12 @@ class XiamiDownloader:
         )
 
     def format_folder(self, wrap, trackinfo):
-        return '%s/%s' % (wrap, sanitize_filename(trackinfo['album']))
-        
+        return os.path.join(
+            os.getcwd(),
+            wrap.decode(default_encoding),
+            sanitize_filename(trackinfo['album'])
+        )
+
     def format_output(self, folder, filename):
         return '%s/%s' % (folder, filename)
 
@@ -322,7 +326,7 @@ if __name__ == '__main__':
 
         # generate filename and put file into album folder
         filename = xiami.format_filename(track)
-        folder = xiami.format_folder(DOWNLOAD_FOLDER_NAME, track)
+        folder = xiami.format_folder(args.directory, track)
 
         output_file = xiami.format_output(folder, filename)
 
