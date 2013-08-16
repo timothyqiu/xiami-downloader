@@ -28,6 +28,8 @@ URL_PATTERN_SONG = '%s/object_name/default/object_id/0' % URL_PATTERN_ID
 URL_PATTERN_ALBUM = '%s/type/1' % URL_PATTERN_ID
 URL_PATTERN_PLAYLIST = '%s/type/3' % URL_PATTERN_ID
 
+DOWNLOAD_FOLDER_NAME = 'xiami'
+
 HEADERS = {
     'User-Agent':
     'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)',
@@ -180,10 +182,21 @@ class XiamiDownloader:
     def __init__(self):
         self.force_mode = False
 
+    def format_track(self, trackinfo, current, total):
+        trackinfo['id'] = '%s/%s' % (current + 1, total)
+        trackinfo['num'] = str(current + 1).zfill(2)
+        return trackinfo
+
     def format_filename(self, trackinfo):
         return sanitize_filename(
-            '%s - %s.mp3' % (trackinfo['title'], trackinfo['artist'])
+            '%s - %s - %s.mp3' % (trackinfo['num'], trackinfo['title'], trackinfo['artist'])
         )
+
+    def format_folder(self, wrap, trackinfo):
+        return '%s/%s' % (wrap, sanitize_filename(trackinfo['album']))
+        
+    def format_output(self, folder, filename):
+        return '%s/%s' % (folder, filename)
 
     def download(self, url, filename):
         if not self.force_mode and os.path.exists(filename):
@@ -222,6 +235,12 @@ def add_id3_tag(filename, track):
     except mutagen.id3.error:
         pass  # an ID3 tag already exists
 
+    # Track Number
+    musicfile.tags.add(mutagen.id3.TRCK(
+        encoding=3,
+        text=track['id']
+    ))
+
     # Track Title
     musicfile.tags.add(mutagen.id3.TIT2(
         encoding=3,
@@ -258,6 +277,13 @@ def add_id3_tag(filename, track):
         ))
 
     println(musicfile.pprint())
+
+    # Note:
+    # mutagen only write id3v2 with v2.4 spec,
+    # which win-os does not support;
+    # save(v1=2) will write id3v1,
+    # but that requires encoding=0 (latin-1),
+    # which breaks utf-8, so no good solution for win-os.
     musicfile.save()
 
 
@@ -292,10 +318,19 @@ if __name__ == '__main__':
 
     for i in xrange(len(tracks)):
         track = tracks[i]
-        filename = xiami.format_filename(track)
-        println('\n[%d/%d] %s' % (i + 1, len(tracks), filename))
+        track = xiami.format_track(track, i, len(tracks))
 
-        downloaded = xiami.download(track['url'], filename)
+        # generate filename and put file into album folder
+        filename = xiami.format_filename(track)
+        folder = xiami.format_folder(DOWNLOAD_FOLDER_NAME, track)
+
+        output_file = xiami.format_output(folder, filename)
+
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        println('\n[%d/%d] %s' % (i + 1, len(tracks), output_file))
+        downloaded = xiami.download(track['url'], output_file)
 
         if mutagen and downloaded and (not args.no_tag):
-            add_id3_tag(filename, track)
+            add_id3_tag(output_file, track)
