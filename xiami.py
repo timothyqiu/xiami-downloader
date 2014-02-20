@@ -21,7 +21,7 @@ except:
     sys.stderr.write("No mutagen available. ID3 tags won't be written.\n")
 
 
-VERSION = '0.2.0'
+VERSION = '0.2.1'
 
 URL_PATTERN_ID = 'http://www.xiami.com/song/playlist/id/%d'
 URL_PATTERN_SONG = '%s/object_name/default/object_id/0' % URL_PATTERN_ID
@@ -67,7 +67,14 @@ def get_response(url):
 
 def get_playlist_from_url(url):
     tracks = parse_playlist(get_response(url))
-    tracks = [{key: unicode(track[key]) for key in track} for track in tracks]
+    tracks = [
+        {
+            key: unicode(track[key])
+            for key in track
+            if track[key]
+        }
+        for track in tracks
+    ]
     return tracks
 
 
@@ -230,14 +237,22 @@ def add_id3_tag(filename, track):
     # 4 for a reasonable size, or leave it None for the largest...
     image = get_response(get_album_image_url(track['pic'], 4))
 
-    println('Getting lyrics...')
-    lyric = get_response(track['lyric'])
-
     musicfile = mutagen.mp3.MP3(filename)
     try:
         musicfile.add_tags()
     except mutagen.id3.error:
         pass  # an ID3 tag already exists
+
+    # Unsynchronised lyrics/text transcription
+    if 'lyric' in track:
+        println('Getting lyrics...')
+        lyric = get_response(track['lyric'])
+
+        musicfile.tags.add(mutagen.id3.USLT(
+            encoding=3,
+            desc=u'Lyrics',
+            text=unicode(lyric, 'utf-8', errors='replace')
+        ))
 
     # Track Number
     musicfile.tags.add(mutagen.id3.TRCK(
@@ -261,13 +276,6 @@ def add_id3_tag(filename, track):
     musicfile.tags.add(mutagen.id3.TPE1(
         encoding=3,
         text=track['artist']
-    ))
-
-    # Unsynchronised lyrics/text transcription
-    musicfile.tags.add(mutagen.id3.USLT(
-        encoding=3,
-        desc=u'Lyrics',
-        text=unicode(lyric, 'utf-8', errors='replace')
     ))
 
     # Attached Picture

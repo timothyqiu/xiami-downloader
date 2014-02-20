@@ -7,7 +7,7 @@ f.close()
 
 setup(
     name='xiami-downloader',
-    version="0.2.0.1",
+    version="0.2.1.1",
     description='Python script for download preview music from xiami.com.',
     long_description=readme,
     author='Timothy Qiu',
