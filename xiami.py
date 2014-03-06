@@ -81,20 +81,20 @@ def get_playlist_from_url(url):
 
 def parse_playlist(playlist):
     try:
+        # Removes the XML namespace
+        playlist = re.sub(r'xmlns=\".*?\"', '', playlist)
         xml = ET.fromstring(playlist)
     except:
         return []
 
     return [
         {
-            'title': track.find('{http://xspf.org/ns/0/}title').text,
-            'location': track.find('{http://xspf.org/ns/0/}location').text,
-            'lyric': track.find('{http://xspf.org/ns/0/}lyric').text,
-            'pic': track.find('{http://xspf.org/ns/0/}pic').text,
-            'artist': track.find('{http://xspf.org/ns/0/}artist').text,
-            'album': track.find('{http://xspf.org/ns/0/}album_name').text
+            key: track.find(key).text
+            for key in [
+                'title', 'location', 'lyric', 'pic', 'artist', 'album_name'
+            ]
         }
-        for track in xml.iter('{http://xspf.org/ns/0/}track')
+        for track in xml.iter('track')
     ]
 
 
@@ -172,7 +172,7 @@ class XiamiDownloader:
         return os.path.join(
             os.getcwd(),
             wrap.decode(default_encoding),
-            sanitize_filename(trackinfo['album'])
+            sanitize_filename(trackinfo['album_name'])
         )
 
     def format_output(self, folder, filename):
@@ -238,7 +238,7 @@ def add_id3_tag(filename, track):
     # Album Title
     musicfile.tags.add(mutagen.id3.TALB(
         encoding=3,
-        text=track['album']
+        text=track['album_name']
     ))
 
     # Lead Artist/Performer/Soloist/Group
@@ -293,12 +293,10 @@ if __name__ == '__main__':
 
     println('%d file(s) to download' % len(tracks))
 
-    for i in xrange(len(tracks)):
-        track = tracks[i]
+    for track in tracks:
         track['url'] = decode_location(track['location'])
 
-    for i in xrange(len(tracks)):
-        track = tracks[i]
+    for i, track in enumerate(tracks):
         track = xiami.format_track(track, i, len(tracks))
 
         # generate filename and put file into album folder
