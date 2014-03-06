@@ -1,9 +1,9 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
-
 import urllib2
 import subprocess
 import sys
+
+
+__all__ = ['get_downloader']
 
 
 def get_downloader(name=None):

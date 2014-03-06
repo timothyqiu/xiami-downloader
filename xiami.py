@@ -10,6 +10,7 @@ import urllib2
 import xml.etree.ElementTree as ET
 
 from xiami_dl import get_downloader
+from xiami_util import query_yes_no
 
 # ID3 tags support depends on Mutagen
 try:
@@ -122,40 +123,6 @@ def sanitize_filename(filename):
     return re.sub(r'[\\/:*?<>|]', '_', filename)
 
 
-# Refer: http://code.activestate.com/recipes/577058/
-def query_yes_no(question, default="yes"):
-    """Ask a yes/no question via raw_input() and return their answer.
-
-    "question" is a string that is presented to the user.
-    "default" is the presumed answer if the user just hits <Enter>.
-        It must be "yes" (the default), "no" or None (meaning
-        an answer is required of the user).
-
-    The "answer" return value is one of "yes" or "no".
-    """
-    valid = {"yes": "yes", "y": "yes", "ye": "yes",
-             "no": "no", "n": "no"}
-    if default is None:
-        prompt = " [y/n] "
-    elif default == "yes":
-        prompt = " [Y/n] "
-    elif default == "no":
-        prompt = " [y/N] "
-    else:
-        raise ValueError("invalid default answer: '%s'" % default)
-
-    while True:
-        sys.stdout.write(question + prompt)
-        choice = raw_input().lower()
-        if default is not None and choice == '':
-            return default
-        elif choice in valid.keys():
-            return valid[choice]
-        else:
-            sys.stdout.write("Please respond with 'yes' or 'no' "
-                             "(or 'y' or 'n').\n")
-
-
 def parse_arguments():
 
     note = 'The following SONG, ALBUM, and PLAYLIST are IDs which can be' \
@@ -196,7 +163,9 @@ class XiamiDownloader:
 
     def format_filename(self, trackinfo):
         return sanitize_filename(
-            '%s - %s - %s.mp3' % (trackinfo['num'], trackinfo['title'], trackinfo['artist'])
+            '%s - %s - %s.mp3' % (
+                trackinfo['num'], trackinfo['title'], trackinfo['artist']
+            )
         )
 
     def format_folder(self, wrap, trackinfo):

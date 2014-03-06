@@ -12,7 +12,7 @@ setup(
     long_description=readme,
     author='Timothy Qiu',
     url='https://github.com/timothyqiu/xiami-downloader',
-    py_modules=['xiami', 'xiami_dl'],
+    py_modules=['xiami', 'xiami_dl', 'xiami_util'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
