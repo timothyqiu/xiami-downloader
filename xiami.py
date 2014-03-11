@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import argparse
@@ -268,8 +268,7 @@ def add_id3_tag(filename, track):
     musicfile.save()
 
 
-if __name__ == '__main__':
-
+def main():
     args = parse_arguments()
 
     xiami = XiamiDownloader()
@@ -313,3 +312,7 @@ if __name__ == '__main__':
 
         if mutagen and downloaded and (not args.no_tag):
             add_id3_tag(output_file, track)
+
+
+if __name__ == '__main__':
+    main()
