@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import argparse
@@ -10,6 +10,7 @@ import urllib2
 import xml.etree.ElementTree as ET
 
 from xiami_dl import get_downloader
+from xiami_util import query_yes_no
 
 # ID3 tags support depends on Mutagen
 try:
@@ -21,7 +22,7 @@ except:
     sys.stderr.write("No mutagen available. ID3 tags won't be written.\n")
 
 
-VERSION = '0.2.1'
+VERSION = '0.2.2'
 
 URL_PATTERN_ID = 'http://www.xiami.com/song/playlist/id/%d'
 URL_PATTERN_SONG = '%s/object_name/default/object_id/0' % URL_PATTERN_ID
@@ -80,20 +81,20 @@ def get_playlist_from_url(url):
 
 def parse_playlist(playlist):
     try:
+        # Removes the XML namespace
+        playlist = re.sub(r'xmlns=\".*?\"', '', playlist)
         xml = ET.fromstring(playlist)
     except:
         return []
 
     return [
         {
-            'title': track.find('{http://xspf.org/ns/0/}title').text,
-            'location': track.find('{http://xspf.org/ns/0/}location').text,
-            'lyric': track.find('{http://xspf.org/ns/0/}lyric').text,
-            'pic': track.find('{http://xspf.org/ns/0/}pic').text,
-            'artist': track.find('{http://xspf.org/ns/0/}artist').text,
-            'album': track.find('{http://xspf.org/ns/0/}album_name').text
+            key: track.find(key).text
+            for key in [
+                'title', 'location', 'lyric', 'pic', 'artist', 'album_name'
+            ]
         }
-        for track in xml.iter('{http://xspf.org/ns/0/}track')
+        for track in xml.iter('track')
     ]
 
 
@@ -120,40 +121,6 @@ def decode_location(location):
 
 def sanitize_filename(filename):
     return re.sub(r'[\\/:*?<>|]', '_', filename)
-
-
-# Refer: http://code.activestate.com/recipes/577058/
-def query_yes_no(question, default="yes"):
-    """Ask a yes/no question via raw_input() and return their answer.
-
-    "question" is a string that is presented to the user.
-    "default" is the presumed answer if the user just hits <Enter>.
-        It must be "yes" (the default), "no" or None (meaning
-        an answer is required of the user).
-
-    The "answer" return value is one of "yes" or "no".
-    """
-    valid = {"yes": "yes", "y": "yes", "ye": "yes",
-             "no": "no", "n": "no"}
-    if default is None:
-        prompt = " [y/n] "
-    elif default == "yes":
-        prompt = " [Y/n] "
-    elif default == "no":
-        prompt = " [y/N] "
-    else:
-        raise ValueError("invalid default answer: '%s'" % default)
-
-    while True:
-        sys.stdout.write(question + prompt)
-        choice = raw_input().lower()
-        if default is not None and choice == '':
-            return default
-        elif choice in valid.keys():
-            return valid[choice]
-        else:
-            sys.stdout.write("Please respond with 'yes' or 'no' "
-                             "(or 'y' or 'n').\n")
 
 
 def parse_arguments():
@@ -196,14 +163,16 @@ class XiamiDownloader:
 
     def format_filename(self, trackinfo):
         return sanitize_filename(
-            '%s - %s - %s.mp3' % (trackinfo['num'], trackinfo['title'], trackinfo['artist'])
+            '%s - %s - %s.mp3' % (
+                trackinfo['num'], trackinfo['title'], trackinfo['artist']
+            )
         )
 
     def format_folder(self, wrap, trackinfo):
         return os.path.join(
             os.getcwd(),
             wrap.decode(default_encoding),
-            sanitize_filename(trackinfo['album'])
+            sanitize_filename(trackinfo['album_name'])
         )
 
     def format_output(self, folder, filename):
@@ -269,7 +238,7 @@ def add_id3_tag(filename, track):
     # Album Title
     musicfile.tags.add(mutagen.id3.TALB(
         encoding=3,
-        text=track['album']
+        text=track['album_name']
     ))
 
     # Lead Artist/Performer/Soloist/Group
@@ -299,8 +268,7 @@ def add_id3_tag(filename, track):
     musicfile.save()
 
 
-if __name__ == '__main__':
-
+def main():
     args = parse_arguments()
 
     xiami = XiamiDownloader()
@@ -324,12 +292,10 @@ if __name__ == '__main__':
 
     println('%d file(s) to download' % len(tracks))
 
-    for i in xrange(len(tracks)):
-        track = tracks[i]
+    for track in tracks:
         track['url'] = decode_location(track['location'])
 
-    for i in xrange(len(tracks)):
-        track = tracks[i]
+    for i, track in enumerate(tracks):
         track = xiami.format_track(track, i, len(tracks))
 
         # generate filename and put file into album folder
@@ -346,3 +312,7 @@ if __name__ == '__main__':
 
         if mutagen and downloaded and (not args.no_tag):
             add_id3_tag(output_file, track)
+
+
+if __name__ == '__main__':
+    main()

@@ -10,7 +10,7 @@ Note: this is a python script using python 2.
 
 ## Usage
 
-    xiami.py [options]
+    python xiami.py [options]
 
 ## Options
 
@@ -31,7 +31,7 @@ Default download tool is the built-in urllib2 on Windows, others will be wget.
 
 To download the album _Mahōtsukai no Yoru OST_, first refer to the url <http://www.xiami.com/album/511682> to get album ID: __511682__. Then use the following command to download:
 
-    xiami.py -a 511682
+    python xiami.py -a 511682
 
 ## License
 
@@ -52,7 +52,7 @@ This software is distributed under the [MIT License][2].
 
 ## 使用方法
 
-    xiami.py [选项]
+    python xiami.py [选项]
 
 ## 选项
 
@@ -73,7 +73,7 @@ This software is distributed under the [MIT License][2].
 
 例如要下载专辑《魔法使いの夜 オリジナルサウンドトラック》，首先从其 URL <http://www.xiami.com/album/511682> 中找出专辑 ID： __511682__。然后使用如下命令下载：
 
-    xiami.py -a 511682
+    python xiami.py -a 511682
 
 ## 许可
 
