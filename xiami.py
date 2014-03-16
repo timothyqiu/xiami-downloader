@@ -182,8 +182,12 @@ class XiamiDownloader:
         if not self.force_mode and os.path.exists(filename):
             if query_yes_no('File already exists. Skip downloading?') == 'yes':
                 return False
-        self.downloader(url, filename, HEADERS)
-        return True
+        try:
+            self.downloader(url, filename, HEADERS)
+            return True
+        except Exception as e:
+            println(u'Error downloading: {}'.format(e))
+            return False
 
 
 def build_url_list(pattern, l):
