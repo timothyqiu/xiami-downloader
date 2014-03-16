@@ -22,25 +22,20 @@ def urllib2_downloader(url, dest, headers):
     request = urllib2.Request(url)
     for h in headers:
         request.add_header(h, headers[h])
-    try:
-        response = urllib2.urlopen(request)
-        length = int(response.headers['Content-Length'])
-        downloaded = 0.0
-        with open(dest, 'wb') as output:
-            while True:
-                chunk = response.read(8192)
-                if not chunk:
-                    break
-                downloaded += len(chunk)
-                output.write(chunk)
-                percent = float(downloaded) / length * 100
-                sys.stdout.write('\r{:5.1f}%'.format(percent))
-                sys.stdout.flush()
-            sys.stdout.write('\n')
-    except IOError as e:
-        print e
-    except urllib2.URLError as e:
-        print e
+    response = urllib2.urlopen(request)
+    length = int(response.headers['Content-Length'])
+    downloaded = 0.0
+    with open(dest, 'wb') as output:
+        while True:
+            chunk = response.read(8192)
+            if not chunk:
+                break
+            downloaded += len(chunk)
+            output.write(chunk)
+            percent = float(downloaded) / length * 100
+            sys.stdout.write('\r{:5.1f}%'.format(percent))
+            sys.stdout.flush()
+        sys.stdout.write('\n')
 
 
 def wget_downloader(url, dest, headers):
