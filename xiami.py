@@ -22,7 +22,7 @@ except:
     sys.stderr.write("No mutagen available. ID3 tags won't be written.\n")
 
 
-VERSION = '0.2.2'
+VERSION = '0.3.0'
 
 URL_PATTERN_ID = 'http://www.xiami.com/song/playlist/id/%d'
 URL_PATTERN_SONG = '%s/object_name/default/object_id/0' % URL_PATTERN_ID
@@ -148,29 +148,31 @@ def parse_arguments():
                         help='skip adding ID3 tag')
     parser.add_argument('--directory', default='',
                         help='save downloads to the directory')
+    parser.add_argument('--name-template', default='{id} - {title} - {artist}',
+                        help='filename template')
 
     return parser.parse_args()
 
 
 class XiamiDownloader:
-    def __init__(self):
+    def __init__(self, args):
         self.force_mode = False
+        self.downloader = get_downloader(args.tool)
+        self.force_mode = args.force
+        self.name_template = args.name_template
 
     def format_track(self, trackinfo, current, total):
-        trackinfo['id'] = '%s/%s' % (current + 1, total)
-        trackinfo['num'] = str(current + 1).zfill(2)
+        trackinfo['track'] = '%s/%s' % (current + 1, total)
+        trackinfo['id'] = str(current + 1).zfill(2)
         return trackinfo
 
     def format_filename(self, trackinfo):
-        return sanitize_filename(
-            '%s - %s - %s.mp3' % (
-                trackinfo['num'], trackinfo['title'], trackinfo['artist']
-            )
-        )
+        template = unicode(self.name_template)
+        filename = sanitize_filename(template.format(**trackinfo))
+        return u'{}.mp3'.format(filename)
 
     def format_folder(self, wrap, trackinfo):
         return os.path.join(
-            os.getcwd(),
             wrap.decode(default_encoding),
             sanitize_filename(trackinfo['album_name'])
         )
@@ -230,7 +232,7 @@ def add_id3_tag(filename, track):
     # Track Number
     musicfile.tags.add(mutagen.id3.TRCK(
         encoding=3,
-        text=track['id']
+        text=track['track']
     ))
 
     # Track Title
@@ -275,9 +277,7 @@ def add_id3_tag(filename, track):
 def main():
     args = parse_arguments()
 
-    xiami = XiamiDownloader()
-    xiami.downloader = get_downloader(args.tool)
-    xiami.force_mode = args.force
+    xiami = XiamiDownloader(args)
 
     urls = []
 

@@ -22,10 +22,17 @@ Note: this is a python script using python 2.
 * `-h` Shows usage.
 * `--no-tag` do not add tag.
 * `--directory` save all downloads into the directory.
+* `--name-template` Filename template.
 
 `<song id>`, `<playlist id>` and `<album id>` can be retrived from URLs of Xiami.
 
 Default download tool is the built-in urllib2 on Windows, others will be wget.
+
+Filename template defaults to `{id} - {title} - {artist}`. The arguments are:
+
+* `{id}` ID
+* `{title}` Title of the track
+* `{artist}` Artist of the track
 
 ## Example
 
@@ -64,10 +71,17 @@ This software is distributed under the [MIT License][2].
 * `-h` 显示用法。
 * `--no-tag` 不添加 ID3 Tag。
 * `--directory` 将下载到的文件放入该文件夹中。
+* `--name-template` 文件名模版。
 
 `<歌曲ID>`、`<精选集ID>` 及 `<专辑ID>` 都可以从对应虾米页面的 URL 中找出。
 
 默认下载工具在 Windows 上是内置的 urllib2，其它平台则是 wget。
+
+文件名模版默认值为 `{id} - {title} - {artist}`，可选参数如下：
+
+* `{id}` 编号
+* `{title}` 该音轨的标题
+* `{artist}` 该音轨的作者
 
 ## 示例
 

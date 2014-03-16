@@ -7,7 +7,7 @@ with codecs.open('README.md', encoding='utf-8') as f:
 
 setup(
     name='xiami-downloader',
-    version="0.2.2",
+    version="0.3.0",
     description='Python script for download preview music from xiami.com.',
     long_description=long_description,
 
