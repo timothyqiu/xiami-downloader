@@ -157,6 +157,8 @@ def parse_arguments():
                         help='save downloads to the directory')
     parser.add_argument('--name-template', default='{id} - {title} - {artist}',
                         help='filename template')
+    parser.add_argument('--no-lrc-timetag', action='store_true',
+                        help='remove timetag in lyric')
 
     return parser.parse_args()
 
@@ -208,6 +210,29 @@ class XiamiDownloader:
 def build_url_list(pattern, l):
     return [pattern % item for group in l for item in group]
 
+def lrc2txt(fp): # https://github.com/hujunfeng/lrc2txt
+    TIME_TAG_RE = '\[\d{2}:\d{2}\.\d{2}\]'
+    lyrics = {}
+    all_time_tags = []
+    lrc = ''
+    fp = fp.splitlines()
+
+    counter = 0
+    for l in fp:
+        line = re.sub(TIME_TAG_RE, '', l)
+        time_tags = re.findall(TIME_TAG_RE, l)
+        for tag in time_tags:
+            lyrics[tag] = line
+            all_time_tags.insert(counter, tag)
+            counter += 1
+
+    all_time_tags.sort()
+
+    for tag in all_time_tags:
+        lrc += lyrics[tag] + '\n'
+
+    return lrc
+
 
 # Get album image url in a specific size
 def get_album_image_url(basic, size=None):
@@ -218,7 +243,7 @@ def get_album_image_url(basic, size=None):
     return re.sub(r'^(.+)_\d(\..+)$', rep, basic)
 
 
-def add_id3_tag(filename, track):
+def add_id3_tag(filename, track, args):
     println('Tagging...')
 
     println('Getting album cover...')
@@ -235,6 +260,12 @@ def add_id3_tag(filename, track):
     if 'lyric' in track:
         println('Getting lyrics...')
         lyric = get_response(track['lyric'])
+
+        if args.no_lrc_timetag:
+            old_lyric = lyric
+            lyric = lrc2txt(lyric)
+            if lyric=='':
+                lyric = old_lyric
 
         musicfile.tags.add(mutagen.id3.USLT(
             encoding=3,
@@ -328,7 +359,7 @@ def main():
         downloaded = xiami.download(track['url'], output_file)
 
         if mutagen and downloaded and (not args.no_tag):
-            add_id3_tag(output_file, track)
+            add_id3_tag(output_file, track, args)
 
 
 if __name__ == '__main__':
