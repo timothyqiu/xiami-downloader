@@ -8,6 +8,7 @@ import sys
 import urllib
 import urllib2
 import xml.etree.ElementTree as ET
+import json
 
 from xiami_dl import get_downloader
 from xiami_util import query_yes_no
@@ -28,6 +29,7 @@ URL_PATTERN_ID = 'http://www.xiami.com/song/playlist/id/%d'
 URL_PATTERN_SONG = '%s/object_name/default/object_id/0' % URL_PATTERN_ID
 URL_PATTERN_ALBUM = '%s/type/1' % URL_PATTERN_ID
 URL_PATTERN_PLAYLIST = '%s/type/3' % URL_PATTERN_ID
+URL_PATTERN_ALBUMFULL = 'http://www.xiami.com/app/android/album?id=%s'
 
 HEADERS = {
     'User-Agent':
@@ -91,7 +93,7 @@ def parse_playlist(playlist):
         {
             key: track.find(key).text
             for key in [
-                'title', 'location', 'lyric', 'pic', 'artist', 'album_name'
+                'title', 'location', 'lyric', 'pic', 'artist', 'album_name', 'song_id', 'album_id'
             ]
         }
         for track in xml.iter('track')
@@ -161,9 +163,15 @@ class XiamiDownloader:
         self.force_mode = args.force
         self.name_template = args.name_template
 
-    def format_track(self, trackinfo, current, total):
-        trackinfo['track'] = '%s/%s' % (current + 1, total)
-        trackinfo['id'] = str(current + 1).zfill(2)
+    def format_track(self, trackinfo):
+        data = json.loads(get_response(URL_PATTERN_ALBUMFULL % trackinfo['album_id']))
+        song_track=0
+        for song in data['album']['songs']:
+            if(song['song_id']==trackinfo['song_id']):
+                song_track=song['track']
+                break
+        trackinfo['track'] = '%s/%s' % (song_track, data['album']['songs'][-1]['track'])
+        trackinfo['id'] = str(song_track).zfill(2)
         return trackinfo
 
     def format_filename(self, trackinfo):
@@ -300,7 +308,7 @@ def main():
         track['url'] = decode_location(track['location'])
 
     for i, track in enumerate(tracks):
-        track = xiami.format_track(track, i, len(tracks))
+        track = xiami.format_track(track)
 
         # generate filename and put file into album folder
         filename = xiami.format_filename(track)
