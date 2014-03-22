@@ -85,6 +85,11 @@ def parse_playlist(playlist):
     try:
         # Removes the XML namespace
         playlist = re.sub(r'xmlns=\".*?\"', '', playlist)
+        # Replace chars like &#039;
+        matches = re.findall(r'(?<=&#)\d+(?=;)', playlist)
+        for match in matches:
+            playlist = playlist.replace('&#'+match+';', chr(int(match)))
+        playlist = playlist.replace('&quot;','"').replace('&gt;','>').replace('&lt;','<')
         xml = ET.fromstring(playlist)
     except:
         return []
