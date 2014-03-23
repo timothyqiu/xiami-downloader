@@ -8,6 +8,10 @@ import sys
 import urllib
 import urllib2
 import xml.etree.ElementTree as ET
+import json
+import httplib
+from contextlib import closing
+from Cookie import SimpleCookie
 
 from xiami_dl import get_downloader
 from xiami_util import query_yes_no
@@ -28,6 +32,8 @@ URL_PATTERN_ID = 'http://www.xiami.com/song/playlist/id/%d'
 URL_PATTERN_SONG = '%s/object_name/default/object_id/0' % URL_PATTERN_ID
 URL_PATTERN_ALBUM = '%s/type/1' % URL_PATTERN_ID
 URL_PATTERN_PLAYLIST = '%s/type/3' % URL_PATTERN_ID
+URL_PATTERN_ALBUMFULL = 'http://www.xiami.com/app/android/album?id=%s'
+URL_PATTERN_VIP = 'http://www.xiami.com/song/gethqsong/sid/%s'
 
 HEADERS = {
     'User-Agent':
@@ -66,6 +72,25 @@ def get_response(url):
         return ''
 
 
+def vip_login(email, password): # https://gist.github.com/lepture/1014329
+    println('Login for vip ...')
+    _form = {
+        'email': email, 'password': password,
+        'LoginButton': '登录',
+    }
+    data = urllib.urlencode(_form)
+    headers_login = {'User-Agent': 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)'}
+    headers_login['Referer'] = 'http://www.xiami.com/web/login'
+    headers_login['Content-Type'] = 'application/x-www-form-urlencoded'
+    with closing(httplib.HTTPConnection('www.xiami.com')) as conn:
+        conn.request('POST', '/web/login', data, headers_login)
+        res = conn.getresponse()
+        cookie = res.getheader('Set-Cookie')
+        _auth = 'member_auth=%s; t_sign_auth=1' % SimpleCookie(cookie)['member_auth'].value
+        println('Login success')
+        return _auth
+
+
 def get_playlist_from_url(url):
     tracks = parse_playlist(get_response(url))
     tracks = [
@@ -83,6 +108,11 @@ def parse_playlist(playlist):
     try:
         # Removes the XML namespace
         playlist = re.sub(r'xmlns=\".*?\"', '', playlist)
+        # Replace chars like &#039;
+        matches = re.findall(r'(?<=&#)\d+(?=;)', playlist)
+        for match in matches:
+            playlist = playlist.replace('&#'+match+';', chr(int(match)))
+        playlist = playlist.replace('&quot;','"').replace('&gt;','>').replace('&lt;','<')
         xml = ET.fromstring(playlist)
     except:
         return []
@@ -91,11 +121,15 @@ def parse_playlist(playlist):
         {
             key: track.find(key).text
             for key in [
-                'title', 'location', 'lyric', 'pic', 'artist', 'album_name'
+                'title', 'location', 'lyric', 'pic', 'artist', 'album_name', 'song_id', 'album_id'
             ]
         }
         for track in xml.iter('track')
     ]
+
+
+def vip_location(song_id):
+    return get_response(URL_PATTERN_VIP % song_id).replace('{"status":1,"location":"', '').replace('"}', '')
 
 
 def decode_location(location):
@@ -150,6 +184,12 @@ def parse_arguments():
                         help='save downloads to the directory')
     parser.add_argument('--name-template', default='{id} - {title} - {artist}',
                         help='filename template')
+    parser.add_argument('--no-lrc-timetag', action='store_true',
+                        help='remove timetag in lyric')
+    parser.add_argument('-un', '--username', default='',
+                        help='Vip account email')
+    parser.add_argument('-pw', '--password', default='',
+                        help='Vip account password')
 
     return parser.parse_args()
 
@@ -161,9 +201,15 @@ class XiamiDownloader:
         self.force_mode = args.force
         self.name_template = args.name_template
 
-    def format_track(self, trackinfo, current, total):
-        trackinfo['track'] = '%s/%s' % (current + 1, total)
-        trackinfo['id'] = str(current + 1).zfill(2)
+    def format_track(self, trackinfo):
+        data = json.loads(get_response(URL_PATTERN_ALBUMFULL % trackinfo['album_id']))
+        song_track=0
+        for song in data['album']['songs']:
+            if(song['song_id']==trackinfo['song_id']):
+                song_track=song['track']
+                break
+        trackinfo['track'] = '%s/%s' % (song_track, data['album']['songs'][-1]['track'])
+        trackinfo['id'] = str(song_track).zfill(2)
         return trackinfo
 
     def format_filename(self, trackinfo):
@@ -195,6 +241,29 @@ class XiamiDownloader:
 def build_url_list(pattern, l):
     return [pattern % item for group in l for item in group]
 
+def lrc2txt(fp): # https://github.com/hujunfeng/lrc2txt
+    TIME_TAG_RE = '\[\d{2}:\d{2}\.\d{2}\]'
+    lyrics = {}
+    all_time_tags = []
+    lrc = ''
+    fp = fp.splitlines()
+
+    counter = 0
+    for l in fp:
+        line = re.sub(TIME_TAG_RE, '', l)
+        time_tags = re.findall(TIME_TAG_RE, l)
+        for tag in time_tags:
+            lyrics[tag] = line
+            all_time_tags.insert(counter, tag)
+            counter += 1
+
+    all_time_tags.sort()
+
+    for tag in all_time_tags:
+        lrc += lyrics[tag] + '\n'
+
+    return lrc
+
 
 # Get album image url in a specific size
 def get_album_image_url(basic, size=None):
@@ -205,7 +274,7 @@ def get_album_image_url(basic, size=None):
     return re.sub(r'^(.+)_\d(\..+)$', rep, basic)
 
 
-def add_id3_tag(filename, track):
+def add_id3_tag(filename, track, args):
     println('Tagging...')
 
     println('Getting album cover...')
@@ -222,6 +291,12 @@ def add_id3_tag(filename, track):
     if 'lyric' in track:
         println('Getting lyrics...')
         lyric = get_response(track['lyric'])
+
+        if args.no_lrc_timetag:
+            old_lyric = lyric
+            lyric = lrc2txt(lyric)
+            if lyric=='':
+                lyric = old_lyric
 
         musicfile.tags.add(mutagen.id3.USLT(
             encoding=3,
@@ -297,10 +372,13 @@ def main():
     println('%d file(s) to download' % len(tracks))
 
     for track in tracks:
+        if(args.username != '' and args.password != ''):
+            HEADERS['Cookie']=vip_login(args.username, args.password)
+            track['location'] = vip_location(track['song_id'])
         track['url'] = decode_location(track['location'])
 
     for i, track in enumerate(tracks):
-        track = xiami.format_track(track, i, len(tracks))
+        track = xiami.format_track(track)
 
         # generate filename and put file into album folder
         filename = xiami.format_filename(track)
@@ -315,7 +393,7 @@ def main():
         downloaded = xiami.download(track['url'], output_file)
 
         if mutagen and downloaded and (not args.no_tag):
-            add_id3_tag(output_file, track)
+            add_id3_tag(output_file, track, args)
 
 
 if __name__ == '__main__':
