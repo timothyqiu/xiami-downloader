@@ -114,7 +114,8 @@ def parse_playlist(playlist):
         matches = re.findall(r'(?<=&#)\d+(?=;)', playlist)
         for match in matches:
             playlist = playlist.replace('&#'+match+';', chr(int(match)))
-        playlist = playlist.replace('&quot;', '"').replace('&gt;', '>').replace('&lt;', '<')
+        playlist = playlist.replace('&quot;', '"').replace('&gt;', '>') \
+                   .replace('&lt;', '<').replace('&amp;','&')
         xml = ET.fromstring(playlist)
     except:
         return []
