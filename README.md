@@ -23,6 +23,9 @@ Note: this is a python script using python 2.
 * `--no-tag` do not add tag.
 * `--directory` save all downloads into the directory.
 * `--name-template` Filename template.
+* `--no-lrc-timetag` Remove timetag in lyric.
+* `-un <email>` Vip account email.
+* `-pw <password>` Vip account password.
 
 `<song id>`, `<playlist id>` and `<album id>` can be retrived from URLs of Xiami.
 
@@ -33,6 +36,9 @@ Filename template defaults to `{id} - {title} - {artist}`. The arguments are:
 * `{id}` ID
 * `{title}` Title of the track
 * `{artist}` Artist of the track
+
+If you have a Vip account, you can download 320K musics.
+But notice that xiami has a limit of the musics downloaded in a short time, so you should have a rest between downloading a lot of musics.
 
 ## Example
 
@@ -72,6 +78,9 @@ This software is distributed under the [MIT License][2].
 * `--no-tag` 不添加 ID3 Tag。
 * `--directory` 将下载到的文件放入该文件夹中。
 * `--name-template` 文件名模版。
+* `--no-lrc-timetag` 去除歌词中的时间标签.
+* `-un <email>` Vip账号.
+* `-pw <password>` Vip账号密码.
 
 `<歌曲ID>`、`<精选集ID>` 及 `<专辑ID>` 都可以从对应虾米页面的 URL 中找出。
 
@@ -82,6 +91,9 @@ This software is distributed under the [MIT License][2].
 * `{id}` 编号
 * `{title}` 该音轨的标题
 * `{artist}` 该音轨的作者
+
+如果有VIP账号，可以下载高品质320K的歌曲
+虾米有高音质音乐下载限制，所以不要短时间内下一大堆歌
 
 ## 示例
 

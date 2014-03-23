@@ -9,6 +9,9 @@ import urllib
 import urllib2
 import xml.etree.ElementTree as ET
 import json
+import httplib
+from contextlib import closing
+from Cookie import SimpleCookie
 
 from xiami_dl import get_downloader
 from xiami_util import query_yes_no
@@ -30,6 +33,7 @@ URL_PATTERN_SONG = '%s/object_name/default/object_id/0' % URL_PATTERN_ID
 URL_PATTERN_ALBUM = '%s/type/1' % URL_PATTERN_ID
 URL_PATTERN_PLAYLIST = '%s/type/3' % URL_PATTERN_ID
 URL_PATTERN_ALBUMFULL = 'http://www.xiami.com/app/android/album?id=%s'
+URL_PATTERN_VIP = 'http://www.xiami.com/song/gethqsong/sid/%s'
 
 HEADERS = {
     'User-Agent':
@@ -68,6 +72,25 @@ def get_response(url):
         return ''
 
 
+def vip_login(email, password): # https://gist.github.com/lepture/1014329
+    println('Login for vip ...')
+    _form = {
+        'email': email, 'password': password,
+        'LoginButton': '登录',
+    }
+    data = urllib.urlencode(_form)
+    headers_login = {'User-Agent': 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)'}
+    headers_login['Referer'] = 'http://www.xiami.com/web/login'
+    headers_login['Content-Type'] = 'application/x-www-form-urlencoded'
+    with closing(httplib.HTTPConnection('www.xiami.com')) as conn:
+        conn.request('POST', '/web/login', data, headers_login)
+        res = conn.getresponse()
+        cookie = res.getheader('Set-Cookie')
+        _auth = 'member_auth=%s; t_sign_auth=1' % SimpleCookie(cookie)['member_auth'].value
+        println('Login success')
+        return _auth
+
+
 def get_playlist_from_url(url):
     tracks = parse_playlist(get_response(url))
     tracks = [
@@ -103,6 +126,10 @@ def parse_playlist(playlist):
         }
         for track in xml.iter('track')
     ]
+
+
+def vip_location(song_id):
+    return get_response(URL_PATTERN_VIP % song_id).replace('{"status":1,"location":"', '').replace('"}', '')
 
 
 def decode_location(location):
@@ -159,6 +186,10 @@ def parse_arguments():
                         help='filename template')
     parser.add_argument('--no-lrc-timetag', action='store_true',
                         help='remove timetag in lyric')
+    parser.add_argument('-un', '--username', default='',
+                        help='Vip account email')
+    parser.add_argument('-pw', '--password', default='',
+                        help='Vip account password')
 
     return parser.parse_args()
 
@@ -341,6 +372,9 @@ def main():
     println('%d file(s) to download' % len(tracks))
 
     for track in tracks:
+        if(args.username != '' and args.password != ''):
+            HEADERS['Cookie']=vip_login(args.username, args.password)
+            track['location'] = vip_location(track['song_id'])
         track['url'] = decode_location(track['location'])
 
     for i, track in enumerate(tracks):
