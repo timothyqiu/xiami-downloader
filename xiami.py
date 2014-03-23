@@ -72,21 +72,23 @@ def get_response(url):
         return ''
 
 
-def vip_login(email, password): # https://gist.github.com/lepture/1014329
+# https://gist.github.com/lepture/1014329
+def vip_login(email, password):
     println('Login for vip ...')
     _form = {
         'email': email, 'password': password,
         'LoginButton': '登录',
     }
     data = urllib.urlencode(_form)
-    headers_login = {'User-Agent': 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)'}
+    headers_login = {'User-Agent': HEADERS['User-Agent']}
     headers_login['Referer'] = 'http://www.xiami.com/web/login'
     headers_login['Content-Type'] = 'application/x-www-form-urlencoded'
     with closing(httplib.HTTPConnection('www.xiami.com')) as conn:
         conn.request('POST', '/web/login', data, headers_login)
         res = conn.getresponse()
         cookie = res.getheader('Set-Cookie')
-        _auth = 'member_auth=%s; t_sign_auth=1' % SimpleCookie(cookie)['member_auth'].value
+        member_auth = SimpleCookie(cookie)['member_auth'].value
+        _auth = 'member_auth=%s; t_sign_auth=1' % member_auth
         println('Login success')
         return _auth
 
@@ -112,7 +114,7 @@ def parse_playlist(playlist):
         matches = re.findall(r'(?<=&#)\d+(?=;)', playlist)
         for match in matches:
             playlist = playlist.replace('&#'+match+';', chr(int(match)))
-        playlist = playlist.replace('&quot;','"').replace('&gt;','>').replace('&lt;','<')
+        playlist = playlist.replace('&quot;', '"').replace('&gt;', '>').replace('&lt;', '<')
         xml = ET.fromstring(playlist)
     except:
         return []
@@ -121,7 +123,8 @@ def parse_playlist(playlist):
         {
             key: track.find(key).text
             for key in [
-                'title', 'location', 'lyric', 'pic', 'artist', 'album_name', 'song_id', 'album_id'
+                'title', 'location', 'lyric', 'pic', 'artist', 'album_name',
+                'song_id', 'album_id'
             ]
         }
         for track in xml.iter('track')
@@ -129,7 +132,8 @@ def parse_playlist(playlist):
 
 
 def vip_location(song_id):
-    return get_response(URL_PATTERN_VIP % song_id).replace('{"status":1,"location":"', '').replace('"}', '')
+    response = get_response(URL_PATTERN_VIP % song_id)
+    return json.loads(response)['location']
 
 
 def decode_location(location):
@@ -202,13 +206,15 @@ class XiamiDownloader:
         self.name_template = args.name_template
 
     def format_track(self, trackinfo):
-        data = json.loads(get_response(URL_PATTERN_ALBUMFULL % trackinfo['album_id']))
-        song_track=0
+        response = get_response(URL_PATTERN_ALBUMFULL % trackinfo['album_id'])
+        data = json.loads(response)
+        song_track = 0
         for song in data['album']['songs']:
-            if(song['song_id']==trackinfo['song_id']):
-                song_track=song['track']
+            if song['song_id'] == trackinfo['song_id']:
+                song_track = song['track']
                 break
-        trackinfo['track'] = '%s/%s' % (song_track, data['album']['songs'][-1]['track'])
+        last_track = data['album']['songs'][-1]['track']
+        trackinfo['track'] = '%s/%s' % (song_track, last_track)
         trackinfo['id'] = str(song_track).zfill(2)
         return trackinfo
 
@@ -241,7 +247,9 @@ class XiamiDownloader:
 def build_url_list(pattern, l):
     return [pattern % item for group in l for item in group]
 
-def lrc2txt(fp): # https://github.com/hujunfeng/lrc2txt
+
+# https://github.com/hujunfeng/lrc2txt
+def lrc2txt(fp):
     TIME_TAG_RE = '\[\d{2}:\d{2}\.\d{2}\]'
     lyrics = {}
     all_time_tags = []
@@ -295,7 +303,7 @@ def add_id3_tag(filename, track, args):
         if args.no_lrc_timetag:
             old_lyric = lyric
             lyric = lrc2txt(lyric)
-            if lyric=='':
+            if lyric:
                 lyric = old_lyric
 
         musicfile.tags.add(mutagen.id3.USLT(
@@ -373,7 +381,7 @@ def main():
 
     for track in tracks:
         if(args.username != '' and args.password != ''):
-            HEADERS['Cookie']=vip_login(args.username, args.password)
+            HEADERS['Cookie'] = vip_login(args.username, args.password)
             track['location'] = vip_location(track['song_id'])
         track['url'] = decode_location(track['location'])
 
