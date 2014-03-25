@@ -114,7 +114,8 @@ def parse_playlist(playlist):
         matches = re.findall(r'(?<=&#)\d+(?=;)', playlist)
         for match in matches:
             playlist = playlist.replace('&#'+match+';', chr(int(match)))
-        playlist = playlist.replace('&quot;', '"').replace('&gt;', '>').replace('&lt;', '<')
+        playlist = playlist.replace('&quot;', '"').replace('&gt;', '>') \
+                   .replace('&lt;', '<').replace('&amp;','&')
         xml = ET.fromstring(playlist)
     except:
         return []
@@ -371,6 +372,9 @@ def main():
     if args.playlist:
         urls.extend(build_url_list(URL_PATTERN_PLAYLIST, args.playlist))
 
+    if(args.username != '' and args.password != ''):
+        HEADERS['Cookie'] = vip_login(args.username, args.password)
+
     # parse playlist xml for a list of track info
     tracks = []
     for playlist_url in urls:
@@ -381,7 +385,6 @@ def main():
 
     for track in tracks:
         if(args.username != '' and args.password != ''):
-            HEADERS['Cookie'] = vip_login(args.username, args.password)
             track['location'] = vip_location(track['song_id'])
         track['url'] = decode_location(track['location'])
 
