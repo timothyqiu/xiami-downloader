@@ -26,7 +26,7 @@ except:
     sys.stderr.write("No mutagen available. ID3 tags won't be written.\n")
 
 
-VERSION = '0.3.0'
+VERSION = '0.3.1'
 
 URL_PATTERN_ID = 'http://www.xiami.com/song/playlist/id/%d'
 URL_PATTERN_SONG = '%s/object_name/default/object_id/0' % URL_PATTERN_ID
@@ -115,7 +115,7 @@ def parse_playlist(playlist):
         for match in matches:
             playlist = playlist.replace('&#'+match+';', chr(int(match)))
         playlist = playlist.replace('&quot;', '"').replace('&gt;', '>') \
-                   .replace('&lt;', '<').replace('&amp;','&')
+            .replace('&lt;', '<').replace('&amp;', '&')
         xml = ET.fromstring(playlist)
     except:
         return []
@@ -207,14 +207,13 @@ class XiamiDownloader:
         self.name_template = args.name_template
 
     def format_track(self, trackinfo):
-        response = get_response(URL_PATTERN_ALBUMFULL % trackinfo['album_id'])
-        data = json.loads(response)
+        tracks = self.get_album(trackinfo['album_id'])['data']['trackList']
         song_track = 0
-        for song in data['album']['songs']:
-            if song['song_id'] == trackinfo['song_id']:
-                song_track = song['track']
+        for i, track in enumerate(tracks):
+            if track['song_id'] == trackinfo['song_id']:
+                song_track = i
                 break
-        last_track = data['album']['songs'][-1]['track']
+        last_track = len(tracks)
         trackinfo['track'] = '%s/%s' % (song_track, last_track)
         trackinfo['id'] = str(song_track).zfill(2)
         return trackinfo
@@ -243,6 +242,14 @@ class XiamiDownloader:
         except Exception as e:
             println(u'Error downloading: {}'.format(e))
             return False
+
+    def get_album(self, album_id):
+        response = json.loads(get_response(
+            'http://www.xiami.com/song/playlist/id/{}/type/1/cat/json'.format(
+                album_id
+            )
+        ))
+        return response
 
 
 def build_url_list(pattern, l):
