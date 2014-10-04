@@ -211,7 +211,7 @@ class XiamiDownloader:
         song_track = 0
         for i, track in enumerate(tracks):
             if track['song_id'] == trackinfo['song_id']:
-                song_track = i
+                song_track = i+1
                 break
         last_track = len(tracks)
         trackinfo['track'] = '%s/%s' % (song_track, last_track)
