@@ -198,16 +198,28 @@ class XiamiDownloader:
         self.downloader = get_downloader(args.tool)
         self.force_mode = args.force
         self.name_template = args.name_template
+        self.song_track_db = {}
 
     def format_track(self, trackinfo):
-        tracks = self.get_album(trackinfo['album_id'])['data']['trackList']
-        song_track = 0
-        for i, track in enumerate(tracks):
-            if track['song_id'] == trackinfo['song_id']:
-                song_track = i+1
-                break
-        last_track = len(tracks)
-        trackinfo['track'] = '%s/%s' % (song_track, last_track)
+        song_id = trackinfo['song_id']
+
+        # Cache the track info
+        if song_id not in self.song_track_db:
+            tracks = self.get_album(trackinfo['album_id'])['data']['trackList']
+            for i, track in enumerate(tracks):
+                self.song_track_db[track['song_id']] = {
+                    'track': i + 1,
+                    'track_count': len(tracks)
+                }
+
+        if song_id in self.song_track_db:
+            song_track = self.song_track_db[song_id]['track']
+            song_track_count = self.song_track_db[song_id]['track_count']
+        else:
+            song_track = 0
+            song_track_count = 0
+
+        trackinfo['track'] = '%s/%s' % (song_track, song_track_count)
         trackinfo['id'] = str(song_track).zfill(2)
         return trackinfo
 
