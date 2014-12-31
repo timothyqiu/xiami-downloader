@@ -1,7 +1,9 @@
+import re
 import sys
 
 
-all = []
+def sanitize_filename(filename):
+    return re.sub(r'[\\/:*?<>|]', '_', filename)
 
 
 # Refer: http://code.activestate.com/recipes/577058/

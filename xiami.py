@@ -14,7 +14,7 @@ from contextlib import closing
 from Cookie import SimpleCookie
 
 from xiami_dl import get_downloader
-from xiami_util import query_yes_no
+from xiami_util import query_yes_no, sanitize_filename
 
 # ID3 tags support depends on Mutagen
 try:
@@ -26,7 +26,7 @@ except:
     sys.stderr.write("No mutagen available. ID3 tags won't be written.\n")
 
 
-VERSION = '0.3.1'
+VERSION = '0.3.2'
 
 URL_PATTERN_ID = 'http://www.xiami.com/song/playlist/id/%d'
 URL_PATTERN_SONG = URL_PATTERN_ID + '/object_name/default/object_id/0/cat/json'
@@ -156,10 +156,6 @@ def decode_location(location):
     return urllib.unquote(url).replace('^', '0')
 
 
-def sanitize_filename(filename):
-    return re.sub(r'[\\/:*?<>|]', '_', filename)
-
-
 def parse_arguments():
 
     note = 'The following SONG, ALBUM, and PLAYLIST are IDs which can be' \
@@ -199,7 +195,6 @@ def parse_arguments():
 
 class XiamiDownloader:
     def __init__(self, args):
-        self.force_mode = False
         self.downloader = get_downloader(args.tool)
         self.force_mode = args.force
         self.name_template = args.name_template
@@ -380,6 +375,7 @@ def main():
 
     xiami = XiamiDownloader(args)
 
+    # Constructs URLs for manifest
     urls = []
 
     if args.song:
@@ -389,10 +385,11 @@ def main():
     if args.playlist:
         urls.extend(build_url_list(URL_PATTERN_PLAYLIST, args.playlist))
 
-    if args.username and args.password:
+    vip_mode = args.username and args.password
+    if vip_mode:
         HEADERS['Cookie'] = vip_login(args.username, args.password)
 
-    # parse playlist xml for a list of track info
+    # parse playlist for a list of track info
     tracks = []
     for playlist_url in urls:
         for url in get_playlist_from_url(playlist_url):
@@ -401,9 +398,11 @@ def main():
     println('%d file(s) to download' % len(tracks))
 
     for track in tracks:
-        if args.username and args.password:
+        if vip_mode:
             track['location'] = vip_location(track['song_id'])
         track['url'] = decode_location(track['location'])
+
+    tagging_enabled = mutagen and (not args.no_tag)
 
     for i, track in enumerate(tracks):
         track = xiami.format_track(track)
@@ -420,7 +419,11 @@ def main():
         println('\n[%d/%d] %s' % (i + 1, len(tracks), output_file))
         downloaded = xiami.download(track['url'], output_file)
 
-        if mutagen and downloaded and (not args.no_tag):
+        # No tagging is needed if download failed or skipped
+        if not downloaded:
+            continue
+
+        if tagging_enabled:
             add_id3_tag(output_file, track, args)
 
 
