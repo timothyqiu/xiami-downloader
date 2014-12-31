@@ -48,6 +48,29 @@ if not default_encoding or default_encoding.lower() == 'ascii':
     default_encoding = 'utf-8'
 
 
+class Song(object):
+    def __init__(self):
+        self.title = u'Unknown Song'
+        self.song_id = 0
+        self.track = 0
+        self.album_id = 0
+        self.album_tracks = 0
+        self.album_name = u'Unknown Album'
+        self.artist = u'Unknown Artist'
+        self.location = None
+        self.lyric_url = None
+        self.pic_url = None
+
+    @property
+    def location(self):
+        return self._location
+
+    @location.setter
+    def location(self, value):
+        self._location = value
+        self.url = decode_location(self._location)
+
+
 def println(text):
     if type(text) == unicode:
         text = text.encode(default_encoding, errors='replace')
@@ -92,17 +115,23 @@ def vip_login(email, password):
         return _auth
 
 
-def get_playlist_from_url(url):
-    tracks = parse_playlist(get_response(url))
-    tracks = [
-        {
-            key: unicode(track[key])
-            for key in track
-            if track[key]
-        }
-        for track in tracks
-    ]
-    return tracks
+def get_songs(url):
+    return parse_playlist(get_response(url))
+
+
+def create_song(raw):
+    parser = HTMLParser.HTMLParser()
+
+    song = Song()
+    song.title = parser.unescape(raw['title'])
+    song.artist = parser.unescape(raw['artist'])
+    song.album_name = parser.unescape(raw['album_name'])
+    song.song_id = raw['song_id']
+    song.album_id = raw['album_id']
+    song.location = raw['location']
+    song.lyric_url = raw['lyric_url']
+    song.pic_url = raw['pic']
+    return song
 
 
 def parse_playlist(playlist):
@@ -116,18 +145,7 @@ def parse_playlist(playlist):
     if not track_list:
         return []
 
-    parser = HTMLParser.HTMLParser()
-
-    return [
-        {
-            key: parser.unescape(track[key])
-            for key in [
-                'title', 'location', 'lyric', 'pic', 'artist', 'album_name',
-                'song_id', 'album_id'
-            ]
-        }
-        for track in track_list
-    ]
+    return map(create_song, track_list)
 
 
 def vip_location(song_id):
@@ -136,6 +154,9 @@ def vip_location(song_id):
 
 
 def decode_location(location):
+    if not location:
+        return None
+
     url = location[1:]
     urllen = len(url)
     rows = int(location[0:1])
@@ -199,43 +220,42 @@ class XiamiDownloader:
         self.force_mode = args.force
         self.name_template = args.name_template
         self.song_track_db = {}
+        self.no_lrc_timetag = args.no_lrc_timetag
+        self.directory = args.directory
 
-    def format_track(self, trackinfo):
-        song_id = trackinfo['song_id']
-
+    def get_song_track(self, song):
         # Cache the track info
-        if song_id not in self.song_track_db:
-            tracks = self.get_album(trackinfo['album_id'])['data']['trackList']
+        if song.song_id not in self.song_track_db:
+            tracks = self.get_album(song.album_id)['data']['trackList']
             for i, track in enumerate(tracks):
                 self.song_track_db[track['song_id']] = {
                     'track': i + 1,
                     'track_count': len(tracks)
                 }
 
-        if song_id in self.song_track_db:
-            song_track = self.song_track_db[song_id]['track']
-            song_track_count = self.song_track_db[song_id]['track_count']
+        if song.song_id in self.song_track_db:
+            song_track = self.song_track_db[song.song_id]['track']
+            album_tracks = self.song_track_db[song.song_id]['track_count']
         else:
             song_track = 0
-            song_track_count = 0
+            album_tracks = 0
 
-        trackinfo['track'] = '%s/%s' % (song_track, song_track_count)
-        trackinfo['id'] = str(song_track).zfill(2)
-        return trackinfo
+        return song_track, album_tracks
 
-    def format_filename(self, trackinfo):
+    def format_filename(self, song):
         template = unicode(self.name_template)
-        filename = sanitize_filename(template.format(**trackinfo))
+        filename = sanitize_filename(template.format(
+            id=u'{:02d}'.format(song.track),
+            title=song.title,
+            artist=song.artist,
+        ))
         return u'{}.mp3'.format(filename)
 
-    def format_folder(self, wrap, trackinfo):
+    def format_folder(self, wrap, song):
         return os.path.join(
             wrap.decode(default_encoding),
-            sanitize_filename(trackinfo['album_name'])
+            sanitize_filename(song.album_name)
         )
-
-    def format_output(self, folder, filename):
-        return os.path.join(folder, filename)
 
     def download(self, url, filename):
         if not self.force_mode and os.path.exists(filename):
@@ -255,6 +275,28 @@ class XiamiDownloader:
             )
         ))
         return response
+
+    def download_songs(self, songs, with_tagging):
+        for i, song in enumerate(songs):
+            song.track, song.album_tracks = self.get_song_track(song)
+
+            # generate filename and put file into album folder
+            filename = self.format_filename(song)
+            folder = self.format_folder(self.directory, song)
+            pathname = os.path.join(folder, filename)
+
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+
+            println('\n[%d/%d] %s' % (i + 1, len(songs), pathname))
+            downloaded = self.download(song.url, pathname)
+
+            # No tagging is needed if download failed or skipped
+            if not downloaded:
+                continue
+
+            if with_tagging:
+                add_id3_tag(pathname, song, self.no_lrc_timetag)
 
 
 def build_url_list(pattern, l):
@@ -295,12 +337,13 @@ def get_album_image_url(basic, size=None):
     return re.sub(r'^(.+)_\d(\..+)$', rep, basic)
 
 
-def add_id3_tag(filename, track, args):
+def add_id3_tag(filename, song, no_lrc_timetag):
     println('Tagging...')
 
     println('Getting album cover...')
     # 4 for a reasonable size, or leave it None for the largest...
-    image = get_response(get_album_image_url(track['pic'], 4))
+    image_url = get_album_image_url(song.pic_url, 4)
+    image = get_response(image_url)
 
     musicfile = mutagen.mp3.MP3(filename)
     try:
@@ -309,11 +352,11 @@ def add_id3_tag(filename, track, args):
         pass  # an ID3 tag already exists
 
     # Unsynchronised lyrics/text transcription
-    if 'lyric' in track:
+    if song.lyric_url:
         println('Getting lyrics...')
-        lyric = get_response(track['lyric'])
+        lyric = get_response(song.lyric_url)
 
-        if args.no_lrc_timetag:
+        if no_lrc_timetag:
             old_lyric = lyric
             lyric = lrc2txt(lyric)
             if lyric:
@@ -328,25 +371,25 @@ def add_id3_tag(filename, track, args):
     # Track Number
     musicfile.tags.add(mutagen.id3.TRCK(
         encoding=3,
-        text=track['track']
+        text=u'{}/{}'.format(song.track, song.album_tracks)
     ))
 
     # Track Title
     musicfile.tags.add(mutagen.id3.TIT2(
         encoding=3,
-        text=track['title']
+        text=song.title
     ))
 
     # Album Title
     musicfile.tags.add(mutagen.id3.TALB(
         encoding=3,
-        text=track['album_name']
+        text=song.album_name
     ))
 
     # Lead Artist/Performer/Soloist/Group
     musicfile.tags.add(mutagen.id3.TPE1(
         encoding=3,
-        text=track['artist']
+        text=song.artist
     ))
 
     # Attached Picture
@@ -390,41 +433,20 @@ def main():
         HEADERS['Cookie'] = vip_login(args.username, args.password)
 
     # parse playlist for a list of track info
-    tracks = []
-    for playlist_url in urls:
-        for url in get_playlist_from_url(playlist_url):
-            tracks.append(url)
+    songs = [
+        song
+        for playlist_url in urls
+        for song in get_songs(playlist_url)
+    ]
 
-    println('%d file(s) to download' % len(tracks))
+    if vip_mode:
+        for song in songs:
+            song.location = vip_location(song.song_id)
 
-    for track in tracks:
-        if vip_mode:
-            track['location'] = vip_location(track['song_id'])
-        track['url'] = decode_location(track['location'])
+    println('%d file(s) to download' % len(songs))
 
     tagging_enabled = mutagen and (not args.no_tag)
-
-    for i, track in enumerate(tracks):
-        track = xiami.format_track(track)
-
-        # generate filename and put file into album folder
-        filename = xiami.format_filename(track)
-        folder = xiami.format_folder(args.directory, track)
-
-        output_file = xiami.format_output(folder, filename)
-
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-
-        println('\n[%d/%d] %s' % (i + 1, len(tracks), output_file))
-        downloaded = xiami.download(track['url'], output_file)
-
-        # No tagging is needed if download failed or skipped
-        if not downloaded:
-            continue
-
-        if tagging_enabled:
-            add_id3_tag(output_file, track, args)
+    xiami.download_songs(songs, tagging_enabled)
 
 
 if __name__ == '__main__':
