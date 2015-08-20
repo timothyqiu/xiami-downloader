@@ -2,9 +2,9 @@
 
 A simple tool for downloading music previews from [Xiami.com][1]
 
-Note: this is a python script using python 2.
+Note: this script requires Python 2
 
-## Dependency
+## Dependencies
 
 * Optionally depends on `mutagen` module for ID3 tag support.
 
@@ -16,33 +16,33 @@ Note: this is a python script using python 2.
 
 * `-a <album id>` Adds all songs in an album to download list.
 * `-p <playlist id>` Adds all songs in a playlist to download list.
-* `-s <song id>` Adds a song to download list.
-* `-f` Force mode. Overwrite existing files without prompt.
+* `-s <song id>` Adds a single song to download list.
+* `-f` Force mode: overwrite existing files without prompting.
 * `-t urllib2|wget` Change the download tool.
-* `-h` Shows usage.
-* `--no-tag` do not add tag.
-* `--directory` save all downloads into the directory.
-* `--name-template` Filename template.
-* `--no-lrc-timetag` Remove timetag in lyric.
+* `-h` Displays usage.
+* `--no-tag` Do not add ID3 tags to the downloaded files.
+* `--directory` Specifies the download directory.
+* `--name-template` Path for the filename template file.
+* `--no-lrc-timetag` Do not add the timetag in lyrics.
 * `-un <email>` Vip account email.
 * `-pw <password>` Vip account password.
 
 `<song id>`, `<playlist id>` and `<album id>` can be retrived from URLs of Xiami.
 
-Default download tool is the built-in urllib2 on Windows, others will be wget.
+For downloading on Windows, this script will use the built-in urllib2-library. On all other OSes, it will use wget. 
 
-Filename template defaults to `{id} - {title} - {artist}`. The arguments are:
+The default template for the filename is set to `{id} - {title} - {artist}`. The arguments are:
 
 * `{id}` ID
 * `{title}` Title of the track
 * `{artist}` Artist of the track
 
-If you have a Vip account, you can download 320K musics.
-But notice that xiami has a limit of the musics downloaded in a short time, so you should have a rest between downloading a lot of musics.
+If you have a Vip account, the script will download tracks in 320K. Remember to set the `-un` and `-pw` arguments accordingly.
+Note that Xiami has a limits the downloads. If you are downloading lots of tracks, make sure to pause between downloads.
 
 ## Example
 
-To download the album _Mahōtsukai no Yoru OST_, first refer to the url <http://www.xiami.com/album/511682> to get album ID: __511682__. Then use the following command to download:
+To download the album _Mahōtsukai no Yoru OST_, first obtain the album's ID from the url:  <http://www.xiami.com/album/511682> (__511682__). Then use the following command to download the album:
 
     python xiami.py -a 511682
 
