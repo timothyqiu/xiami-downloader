@@ -13,8 +13,9 @@ import HTMLParser
 from contextlib import closing
 from Cookie import SimpleCookie
 
-from xiami_dl import get_downloader
-from xiami_util import query_yes_no, sanitize_filename
+from xiami_downloader import __version__
+from xiami_downloader.adapters import get_downloader
+from xiami_downloader.utils import query_yes_no, sanitize_filename
 
 # ID3 tags support depends on Mutagen
 try:
@@ -25,8 +26,6 @@ except:
     mutagen = None
     sys.stderr.write("No mutagen available. ID3 tags won't be written.\n")
 
-
-VERSION = '0.3.2'
 
 URL_PATTERN_ID = 'http://www.xiami.com/song/playlist/id/%d'
 URL_PATTERN_SONG = URL_PATTERN_ID + '/object_name/default/object_id/0/cat/json'
@@ -184,7 +183,8 @@ def parse_arguments():
 
     parser = argparse.ArgumentParser(description=note)
 
-    parser.add_argument('-v', '--version', action='version', version=VERSION)
+    parser.add_argument('-v', '--version', action='version',
+                        version=__version__)
     parser.add_argument('-f', '--force', action='store_true',
                         help='overwrite existing files without prompt')
     parser.add_argument('-t', '--tool', choices=['wget', 'urllib2'],
