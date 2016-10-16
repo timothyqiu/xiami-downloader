@@ -10,7 +10,11 @@ Note: this script requires Python 2
 
 ## Usage
 
-    python xiami.py [options]
+    python -m xiami_downloader.cli [options]
+
+    # Install via pip (Currently not on PyPI, so you have to download this first)
+    pip install .    # Install
+    xiami [options]  # Run
 
 ## Options
 
@@ -44,7 +48,7 @@ Note that Xiami has a limits the downloads. If you are downloading lots of track
 
 To download the album _Mahōtsukai no Yoru OST_, first obtain the album's ID from the url:  <http://www.xiami.com/album/511682> (__511682__). Then use the following command to download the album:
 
-    python xiami.py -a 511682
+    python -m xiami_downloader.cli -a 511682
 
 ## License
 
@@ -65,7 +69,11 @@ This software is distributed under the [MIT License][2].
 
 ## 使用方法
 
-    python xiami.py [选项]
+    python -m xiami_downloader.cli [options]
+
+    # 使用 pip 安装（尚未提交 PyPI，所以需要先手动下载源码）
+    pip install .    # 安装
+    xiami [options]  # 运行
 
 ## 选项
 
@@ -99,7 +107,7 @@ This software is distributed under the [MIT License][2].
 
 例如要下载专辑《魔法使いの夜 オリジナルサウンドトラック》，首先从其 URL <http://www.xiami.com/album/511682> 中找出专辑 ID： __511682__。然后使用如下命令下载：
 
-    python xiami.py -a 511682
+    python -m xiami_downloader.cli -a 511682
 
 ## 许可
 
