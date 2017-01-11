@@ -80,15 +80,15 @@ This software is distributed under the [MIT License][2].
 * `-a <专辑ID>` 下载该专辑中的所有歌曲。
 * `-p <精选集ID>` 下载该精选集中的所有歌曲。
 * `-s <歌曲ID>` 下载该歌曲。
-* `-f` 强制模式。不经确认直接覆盖重名文件。
+* `-f` 强制模式：不经确认直接覆盖重名文件。
 * `-t urllib2|wget` 修改下载工具。
 * `-h` 显示用法。
 * `--no-tag` 不添加 ID3 Tag。
 * `--directory` 将下载到的文件放入该文件夹中。
 * `--name-template` 文件名模版。
-* `--no-lrc-timetag` 去除歌词中的时间标签.
-* `-un <email>` Vip账号.
-* `-pw <password>` Vip账号密码.
+* `--no-lrc-timetag` 去除歌词中的时间标签。
+* `-un <email>` Vip账号。
+* `-pw <password>` Vip账号密码。
 
 `<歌曲ID>`、`<精选集ID>` 及 `<专辑ID>` 都可以从对应虾米页面的 URL 中找出。
 
