@@ -1,22 +1,32 @@
-import codecs
 from setuptools import setup
 
-# Get the long description from the relevant file
-with codecs.open('README.md', encoding='utf-8') as f:
+from xiami_downloader import __version__
+
+
+with open('README.md') as f:
     long_description = f.read()
 
+
+url = 'https://github.com/timothyqiu/xiami-downloader'
+download_url = '{0}/archive/{1}.tar.gz'.format(url, __version__)
+
 setup(
-    name='xiami-downloader',
-    version="0.3.0",
+    name='xiami_downloader',
+    version=__version__,
+    packages=['xiami_downloader'],
+    entry_points={
+        'console_scripts': [
+            'xiami = xiami_downloader.cli:main',
+        ],
+    },
+    license='MIT',
     description='Python script for download preview music from xiami.com.',
     long_description=long_description,
-
-    url='https://github.com/timothyqiu/xiami-downloader',
-
     author='Timothy Qiu',
-
-    license='MIT',
-
+    author_email='timothyqiu32@gmail.com',
+    url=url,
+    download_url=download_url,
+    keywords=['xiami'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
@@ -25,12 +35,4 @@ setup(
         'Operating System :: POSIX',
         'Programming Language :: Python :: 2',
     ],
-
-    py_modules=['xiami', 'xiami_dl', 'xiami_util'],
-
-    entry_points={
-        'console_scripts': [
-            'xiami=xiami:main',
-        ],
-    },
 )

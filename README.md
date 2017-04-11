@@ -2,43 +2,53 @@
 
 A simple tool for downloading music previews from [Xiami.com][1]
 
-Note: this is a python script using python 2.
+Note: this script requires Python 2
 
-## Dependency
+## Dependencies
 
 * Optionally depends on `mutagen` module for ID3 tag support.
 
 ## Usage
 
-    python xiami.py [options]
+    python -m xiami_downloader.cli [options]
+
+    # Install via pip (Currently not on PyPI, so you have to download this first)
+    pip install .    # Install
+    xiami [options]  # Run
 
 ## Options
 
 * `-a <album id>` Adds all songs in an album to download list.
 * `-p <playlist id>` Adds all songs in a playlist to download list.
-* `-s <song id>` Adds a song to download list.
-* `-f` Force mode. Overwrite existing files without prompt.
+* `-s <song id>` Adds a single song to download list.
+* `-f` Force mode: overwrite existing files without prompting.
 * `-t urllib2|wget` Change the download tool.
-* `-h` Shows usage.
-* `--no-tag` do not add tag.
-* `--directory` save all downloads into the directory.
-* `--name-template` Filename template.
+* `-h` Displays usage.
+* `--no-tag` Do not add ID3 tags to the downloaded files.
+* `--directory` Specifies the download directory.
+* `--name-template` Path for the filename template file.
+* `--no-lrc-timetag` Do not add the timetag in lyrics.
+* `-un <email>` Vip account email.
+* `-pw <password>` Vip account password.
 
 `<song id>`, `<playlist id>` and `<album id>` can be retrived from URLs of Xiami.
 
-Default download tool is the built-in urllib2 on Windows, others will be wget.
+For downloading on Windows, this script will use the built-in urllib2-library. On all other OSes, it will use wget. 
 
-Filename template defaults to `{id} - {title} - {artist}`. The arguments are:
+The default template for the filename is set to `{id} - {title} - {artist}`. The arguments are:
 
 * `{id}` ID
 * `{title}` Title of the track
 * `{artist}` Artist of the track
 
+If you have a Vip account, the script will download tracks in 320K. Remember to set the `-un` and `-pw` arguments accordingly.
+Note that Xiami has a limits the downloads. If you are downloading lots of tracks, make sure to pause between downloads.
+
 ## Example
 
-To download the album _Mahōtsukai no Yoru OST_, first refer to the url <http://www.xiami.com/album/511682> to get album ID: __511682__. Then use the following command to download:
+To download the album _Mahōtsukai no Yoru OST_, first obtain the album's ID from the url:  <http://www.xiami.com/album/511682> (__511682__). Then use the following command to download the album:
 
-    python xiami.py -a 511682
+    python -m xiami_downloader.cli -a 511682
 
 ## License
 
@@ -59,19 +69,26 @@ This software is distributed under the [MIT License][2].
 
 ## 使用方法
 
-    python xiami.py [选项]
+    python -m xiami_downloader.cli [options]
+
+    # 使用 pip 安装（尚未提交 PyPI，所以需要先手动下载源码）
+    pip install .    # 安装
+    xiami [options]  # 运行
 
 ## 选项
 
 * `-a <专辑ID>` 下载该专辑中的所有歌曲。
 * `-p <精选集ID>` 下载该精选集中的所有歌曲。
 * `-s <歌曲ID>` 下载该歌曲。
-* `-f` 强制模式。不经确认直接覆盖重名文件。
+* `-f` 强制模式：不经确认直接覆盖重名文件。
 * `-t urllib2|wget` 修改下载工具。
 * `-h` 显示用法。
 * `--no-tag` 不添加 ID3 Tag。
 * `--directory` 将下载到的文件放入该文件夹中。
 * `--name-template` 文件名模版。
+* `--no-lrc-timetag` 去除歌词中的时间标签。
+* `-un <email>` Vip账号。
+* `-pw <password>` Vip账号密码。
 
 `<歌曲ID>`、`<精选集ID>` 及 `<专辑ID>` 都可以从对应虾米页面的 URL 中找出。
 
@@ -83,11 +100,14 @@ This software is distributed under the [MIT License][2].
 * `{title}` 该音轨的标题
 * `{artist}` 该音轨的作者
 
+如果有VIP账号，可以下载高品质320K的歌曲
+虾米有高音质音乐下载限制，所以不要短时间内下一大堆歌
+
 ## 示例
 
 例如要下载专辑《魔法使いの夜 オリジナルサウンドトラック》，首先从其 URL <http://www.xiami.com/album/511682> 中找出专辑 ID： __511682__。然后使用如下命令下载：
 
-    python xiami.py -a 511682
+    python -m xiami_downloader.cli -a 511682
 
 ## 许可
 
