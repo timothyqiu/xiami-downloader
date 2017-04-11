@@ -122,7 +122,7 @@ def create_song(raw):
     parser = HTMLParser.HTMLParser()
 
     song = Song()
-    song.title = parser.unescape(raw['title'])
+    song.title = parser.unescape(raw['songName'])
     song.artist = parser.unescape(raw['artist'])
     song.album_name = parser.unescape(raw['album_name'])
     song.song_id = raw['song_id']
