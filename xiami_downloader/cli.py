@@ -191,13 +191,13 @@ def parse_arguments():
                         help='change the download tool')
     parser.add_argument('-s', '--song', action='append',
                         help='adds songs for download',
-                        type=int, nargs='+')
+                        nargs='+')
     parser.add_argument('-a', '--album', action='append',
                         help='adds all songs in the albums for download',
-                        type=int, nargs='+')
+                        nargs='+')
     parser.add_argument('-p', '--playlist', action='append',
                         help='adds all songs in the playlists for download',
-                        type=int, nargs='+')
+                        nargs='+')
     parser.add_argument('--no-tag', action='store_true',
                         help='skip adding ID3 tag')
     parser.add_argument('--directory', default='',
@@ -299,8 +299,18 @@ class XiamiDownloader:
                 add_id3_tag(pathname, song, self.no_lrc_timetag)
 
 
-def build_url_list(pattern, l):
-    return [pattern % item for group in l for item in group]
+def build_url_list(category, l):
+    patterns = {
+        'album': URL_PATTERN_ALBUM,
+        'song': URL_PATTERN_SONG,
+        'playlist': URL_PATTERN_PLAYLIST,
+    }
+    pattern = patterns[category]
+    return [
+        pattern % get_entity_id(category, item)
+        for group in l
+        for item in group
+    ]
 
 
 # https://github.com/hujunfeng/lrc2txt
@@ -413,6 +423,25 @@ def add_id3_tag(filename, song, no_lrc_timetag):
     musicfile.save()
 
 
+def get_entity_id(category, id_or_code):
+    try:
+        return int(id_or_code)
+    except Exception:
+        code = id_or_code
+
+    base_url = 'http://www.xiami.com/{}'.format(category)
+
+    url = '{}/{}'.format(base_url, code)
+    html = get_response(url)
+
+    pattern = r'<link[^>]+href="{}/(\d+)"'.format(base_url)
+    match = re.search(pattern, html)
+    if not match:
+        raise ValueError('ID not found for {}: {}'.format(category, id_or_code))
+
+    return int(match.group(1))
+
+
 def main():
     args = parse_arguments()
 
@@ -422,11 +451,11 @@ def main():
     urls = []
 
     if args.song:
-        urls.extend(build_url_list(URL_PATTERN_SONG, args.song))
+        urls.extend(build_url_list('song', args.song))
     if args.album:
-        urls.extend(build_url_list(URL_PATTERN_ALBUM, args.album))
+        urls.extend(build_url_list('album', args.album))
     if args.playlist:
-        urls.extend(build_url_list(URL_PATTERN_PLAYLIST, args.playlist))
+        urls.extend(build_url_list('playlist', args.playlist))
 
     vip_mode = args.username and args.password
     if vip_mode:
