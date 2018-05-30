@@ -7,6 +7,7 @@ import re
 import sys
 import urllib
 import urllib2
+import urlparse
 import json
 import httplib
 import HTMLParser
@@ -67,7 +68,16 @@ class Song(object):
     @location.setter
     def location(self, value):
         self._location = value
-        self.url = decode_location(self._location)
+        self.url = normalize_url(decode_location(self._location))
+
+
+def normalize_url(url):
+    if not url:
+        return url
+    parts = urlparse.urlparse(url)
+    if parts.scheme:
+        return url
+    return urlparse.urlunparse(parts._replace(scheme='https'))
 
 
 def println(text):
@@ -128,8 +138,8 @@ def create_song(raw):
     song.song_id = raw['song_id']
     song.album_id = raw['album_id']
     song.location = raw['location']
-    song.lyric_url = raw['lyric_url']
-    song.pic_url = raw['pic']
+    song.lyric_url = normalize_url(raw['lyric_url'])
+    song.pic_url = normalize_url(raw['pic'])
     return song
 
 
@@ -352,8 +362,11 @@ def add_id3_tag(filename, song, no_lrc_timetag):
 
     println('Getting album cover...')
     # 4 for a reasonable size, or leave it None for the largest...
-    image_url = get_album_image_url(song.pic_url, 4)
-    image = get_response(image_url)
+    for size in [4, None]:
+        image_url = get_album_image_url(song.pic_url, size)
+        image = get_response(image_url)
+        if image:
+            break
 
     musicfile = mutagen.mp3.MP3(filename)
     try:
