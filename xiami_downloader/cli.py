@@ -7,6 +7,7 @@ import re
 import sys
 import urllib
 import urllib2
+import urlparse
 import json
 import httplib
 import HTMLParser
@@ -67,7 +68,16 @@ class Song(object):
     @location.setter
     def location(self, value):
         self._location = value
-        self.url = decode_location(self._location)
+        self.url = normalize_url(decode_location(self._location))
+
+
+def normalize_url(url):
+    if not url:
+        return url
+    parts = urlparse.urlparse(url)
+    if parts.scheme:
+        return url
+    return urlparse.urlunparse(parts._replace(scheme='https'))
 
 
 def println(text):
@@ -128,8 +138,8 @@ def create_song(raw):
     song.song_id = raw['song_id']
     song.album_id = raw['album_id']
     song.location = raw['location']
-    song.lyric_url = raw['lyric_url']
-    song.pic_url = raw['pic']
+    song.lyric_url = normalize_url(raw['lyric_url'])
+    song.pic_url = normalize_url(raw['pic'])
     return song
 
 
