@@ -362,8 +362,11 @@ def add_id3_tag(filename, song, no_lrc_timetag):
 
     println('Getting album cover...')
     # 4 for a reasonable size, or leave it None for the largest...
-    image_url = get_album_image_url(song.pic_url, 4)
-    image = get_response(image_url)
+    for size in [4, None]:
+        image_url = get_album_image_url(song.pic_url, size)
+        image = get_response(image_url)
+        if image:
+            break
 
     musicfile = mutagen.mp3.MP3(filename)
     try:
