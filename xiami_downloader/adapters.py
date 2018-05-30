@@ -1,6 +1,7 @@
-import urllib2
 import subprocess
 import sys
+
+from xiami_downloader._compat import request
 
 
 __all__ = ['get_downloader']
@@ -19,10 +20,10 @@ def get_downloader(name=None):
 
 
 def urllib2_downloader(url, dest, headers):
-    request = urllib2.Request(url)
+    req = request.Request(url)
     for h in headers:
-        request.add_header(h, headers[h])
-    response = urllib2.urlopen(request)
+        req.add_header(h, headers[h])
+    response = request.urlopen(req)
     length = int(response.headers['Content-Length'])
     downloaded = 0.0
     with open(dest, 'wb') as output:

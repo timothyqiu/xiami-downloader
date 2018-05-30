@@ -5,9 +5,6 @@ import argparse
 import os
 import re
 import sys
-import urllib
-import urllib2
-import urlparse
 import json
 import httplib
 import HTMLParser
@@ -15,6 +12,7 @@ from contextlib import closing
 from Cookie import SimpleCookie
 
 from xiami_downloader import __version__
+from xiami_downloader._compat import parse, range, request, URLError
 from xiami_downloader.adapters import get_downloader
 from xiami_downloader.utils import query_yes_no, sanitize_filename
 
@@ -74,10 +72,10 @@ class Song(object):
 def normalize_url(url):
     if not url:
         return url
-    parts = urlparse.urlparse(url)
+    parts = parse.urlparse(url)
     if parts.scheme:
         return url
-    return urlparse.urlunparse(parts._replace(scheme='https'))
+    return parse.urlunparse(parts._replace(scheme='https'))
 
 
 def println(text):
@@ -91,14 +89,14 @@ def get_response(url):
 
     If sent without the headers, there may be a 503/403 error.
     """
-    request = urllib2.Request(url)
+    req = request.Request(url)
     for header in HEADERS:
-        request.add_header(header, HEADERS[header])
+        req.add_header(header, HEADERS[header])
 
     try:
-        response = urllib2.urlopen(request)
+        response = request.urlopen(req)
         return response.read()
-    except urllib2.URLError as e:
+    except URLError as e:
         println(e)
         return ''
 
@@ -110,7 +108,7 @@ def vip_login(email, password):
         'email': email, 'password': password,
         'LoginButton': '登录',
     }
-    data = urllib.urlencode(_form)
+    data = parse.urlencode(_form)
     headers_login = {'User-Agent': HEADERS['User-Agent']}
     headers_login['Referer'] = 'http://www.xiami.com/web/login'
     headers_login['Content-Type'] = 'application/x-www-form-urlencoded'
@@ -174,16 +172,16 @@ def decode_location(location):
     rows_ex = urllen % rows    # count of rows that have 1 more column
 
     matrix = []
-    for r in xrange(rows):
+    for r in range(rows):
         length = cols_base + 1 if r < rows_ex else cols_base
         matrix.append(url[:length])
         url = url[length:]
 
     url = ''
-    for i in xrange(urllen):
+    for i in range(urllen):
         url += matrix[i % rows][i / rows]
 
-    return urllib.unquote(url).replace('^', '0')
+    return parse.unquote(url).replace('^', '0')
 
 
 def parse_arguments():
