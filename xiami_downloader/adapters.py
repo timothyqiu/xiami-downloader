@@ -1,10 +1,10 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 import subprocess
 import sys
 
 from xiami_downloader._compat import request
-
-
-__all__ = ['get_downloader']
 
 
 def get_downloader(name=None):
@@ -43,6 +43,4 @@ def wget_downloader(url, dest, headers):
     wget_opts = ['wget', url, '-O', dest]
     for h in headers:
         wget_opts.append('--header=%s:%s' % (h, headers[h]))
-    exit_code = subprocess.call(wget_opts)
-    if exit_code != 0:
-        raise Exception('wget exited abnormaly')
+    subprocess.check_call(wget_opts)

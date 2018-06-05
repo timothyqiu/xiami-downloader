@@ -4,11 +4,20 @@ from __future__ import unicode_literals
 import re
 import sys
 
-from xiami_downloader._compat import input
+from xiami_downloader._compat import input, parse
 
 
 def sanitize_filename(filename):
     return re.sub(r'[\\/:*?<>|]', '_', filename)
+
+
+def normalize_url(url):
+    if not url:
+        return url
+    parts = parse.urlparse(url)
+    if parts.scheme:
+        return url
+    return parse.urlunparse(parts._replace(scheme='https'))
 
 
 # Refer: http://code.activestate.com/recipes/577058/

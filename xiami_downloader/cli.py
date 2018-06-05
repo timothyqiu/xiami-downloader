@@ -21,7 +21,11 @@ from xiami_downloader._compat import (
     URLError,
 )
 from xiami_downloader.adapters import get_downloader
-from xiami_downloader.utils import query_yes_no, sanitize_filename
+from xiami_downloader.utils import (
+    normalize_url,
+    query_yes_no,
+    sanitize_filename,
+)
 
 # ID3 tags support depends on Mutagen
 try:
@@ -74,15 +78,6 @@ class Song(object):
     def location(self, value):
         self._location = value
         self.url = normalize_url(decode_location(self._location))
-
-
-def normalize_url(url):
-    if not url:
-        return url
-    parts = parse.urlparse(url)
-    if parts.scheme:
-        return url
-    return parse.urlunparse(parts._replace(scheme='https'))
 
 
 def println(text):
@@ -476,7 +471,8 @@ def get_entity_id(category, id_or_code):
     pattern = r'<link[^>]+href="{}/(\d+)"'.format(base_url)
     match = re.search(pattern, html)
     if not match:
-        raise ValueError('ID not found for {}: {}'.format(category, id_or_code))
+        message = 'ID not found for {}: {}'.format(category, id_or_code)
+        raise ValueError(message)
 
     return int(match.group(1))
 
