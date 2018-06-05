@@ -6,13 +6,20 @@ import os
 import re
 import sys
 import json
-import httplib
-import HTMLParser
-from contextlib import closing
-from Cookie import SimpleCookie
 
 from xiami_downloader import __version__
-from xiami_downloader._compat import parse, range, request, URLError
+from xiami_downloader._compat import (
+    binary_type,
+    cookiejar,
+    ensure_binary,
+    ensure_text,
+    htmlparser,
+    parse,
+    range,
+    request,
+    text_type,
+    URLError,
+)
 from xiami_downloader.adapters import get_downloader
 from xiami_downloader.utils import query_yes_no, sanitize_filename
 
@@ -79,9 +86,11 @@ def normalize_url(url):
 
 
 def println(text):
-    if type(text) == unicode:
-        text = text.encode(default_encoding, errors='replace')
-    sys.stdout.write(str(text) + '\n')
+    if not isinstance(text, (binary_type, text_type)):
+        text = text_type(text)
+    else:
+        text = ensure_text(text, errors='replace')
+    sys.stdout.write(text + ensure_text('\n'))
 
 
 def get_response(url):
@@ -101,25 +110,44 @@ def get_response(url):
         return ''
 
 
-# https://gist.github.com/lepture/1014329
 def vip_login(email, password):
     println('Login for vip ...')
-    _form = {
-        'email': email, 'password': password,
+
+    req = request.Request('http://www.xiami.com/web/login')
+    req.method = 'POST'
+
+    headers = {
+        'User-Agent': HEADERS['User-Agent'],
+        'Referer': 'http://www.xiami.com/web/login',
+        'Content-Type': 'application/x-www-form-urlencoded',
+    }
+    for header in headers:
+        req.add_header(header, headers[header])
+
+    form = {
+        'email': email,
+        'password': password,
         'LoginButton': '登录',
     }
-    data = parse.urlencode(_form)
-    headers_login = {'User-Agent': HEADERS['User-Agent']}
-    headers_login['Referer'] = 'http://www.xiami.com/web/login'
-    headers_login['Content-Type'] = 'application/x-www-form-urlencoded'
-    with closing(httplib.HTTPConnection('www.xiami.com')) as conn:
-        conn.request('POST', '/web/login', data, headers_login)
-        res = conn.getresponse()
-        cookie = res.getheader('Set-Cookie')
-        member_auth = SimpleCookie(cookie)['member_auth'].value
-        _auth = 'member_auth=%s; t_sign_auth=1' % member_auth
-        println('Login success')
-        return _auth
+    req.data = ensure_binary(parse.urlencode(form))
+
+    jar = cookiejar.CookieJar()
+    opener = request.build_opener(request.HTTPCookieProcessor(jar))
+
+    try:
+        opener.open(req)
+    except Exception as e:
+        println('Login failed: {}'.format(e))
+        return None
+
+    member_auth = next((c.value for c in jar if c.name == 'member_auth'), None)
+    if not member_auth:
+        println('Login failed: `member_auth` not in cookies')
+        return None
+
+    _auth = 'member_auth=%s; t_sign_auth=1' % member_auth
+    println('Login success')
+    return _auth
 
 
 def get_songs(url):
@@ -127,7 +155,7 @@ def get_songs(url):
 
 
 def create_song(raw):
-    parser = HTMLParser.HTMLParser()
+    parser = htmlparser.HTMLParser()
 
     song = Song()
     song.title = parser.unescape(raw['songName'])
@@ -168,8 +196,8 @@ def decode_location(location):
     urllen = len(url)
     rows = int(location[0:1])
 
-    cols_base = urllen / rows  # basic column count
-    rows_ex = urllen % rows    # count of rows that have 1 more column
+    cols_base = urllen // rows  # basic column count
+    rows_ex = urllen % rows     # count of rows that have 1 more column
 
     matrix = []
     for r in range(rows):
@@ -179,7 +207,7 @@ def decode_location(location):
 
     url = ''
     for i in range(urllen):
-        url += matrix[i % rows][i / rows]
+        url += matrix[i % rows][i // rows]
 
     return parse.unquote(url).replace('^', '0')
 
@@ -251,7 +279,7 @@ class XiamiDownloader:
         return song_track, album_tracks
 
     def format_filename(self, song):
-        template = unicode(self.name_template)
+        template = text_type(self.name_template)
         filename = sanitize_filename(template.format(
             id=u'{:02d}'.format(song.track),
             title=song.title,
@@ -261,7 +289,7 @@ class XiamiDownloader:
 
     def format_folder(self, wrap, song):
         return os.path.join(
-            wrap.decode(default_encoding),
+            ensure_text(wrap, encoding=default_encoding),
             sanitize_filename(song.album_name)
         )
 
@@ -386,7 +414,7 @@ def add_id3_tag(filename, song, no_lrc_timetag):
         musicfile.tags.add(mutagen.id3.USLT(
             encoding=3,
             desc=u'Lyrics',
-            text=unicode(lyric, 'utf-8', errors='replace')
+            text=ensure_text(lyric, 'utf-8', errors='replace')
         ))
 
     # Track Number
@@ -470,7 +498,9 @@ def main():
 
     vip_mode = args.username and args.password
     if vip_mode:
-        HEADERS['Cookie'] = vip_login(args.username, args.password)
+        cookie = vip_login(args.username, args.password)
+        if cookie:
+            HEADERS['Cookie'] = cookie
 
     # parse playlist for a list of track info
     songs = [
