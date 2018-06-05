@@ -7,15 +7,11 @@ import re
 import sys
 import json
 
-from xiami_downloader import __version__
+from xiami_downloader import __version__, core, http
 from xiami_downloader._compat import (
     binary_type,
-    cookiejar,
-    ensure_binary,
     ensure_text,
     htmlparser,
-    parse,
-    range,
     request,
     text_type,
     URLError,
@@ -44,9 +40,7 @@ URL_PATTERN_PLAYLIST = URL_PATTERN_ID + '/type/3/cat/json'
 URL_PATTERN_VIP = 'http://www.xiami.com/song/gethqsong/sid/%s'
 
 HEADERS = {
-    'User-Agent':
-    'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)',
-
+    'User-Agent': http.USER_AGENT,
     'Referer': 'http://www.xiami.com/song/play'
 }
 
@@ -77,7 +71,7 @@ class Song(object):
     @location.setter
     def location(self, value):
         self._location = value
-        self.url = normalize_url(decode_location(self._location))
+        self.url = normalize_url(core.decrypt_location(self._location))
 
 
 def println(text):
@@ -93,9 +87,7 @@ def get_response(url):
 
     If sent without the headers, there may be a 503/403 error.
     """
-    req = request.Request(url)
-    for header in HEADERS:
-        req.add_header(header, HEADERS[header])
+    req = http.build_request('GET', url, HEADERS)
 
     try:
         response = request.urlopen(req)
@@ -103,46 +95,6 @@ def get_response(url):
     except URLError as e:
         println(e)
         return ''
-
-
-def vip_login(email, password):
-    println('Login for vip ...')
-
-    req = request.Request('http://www.xiami.com/web/login')
-    req.method = 'POST'
-
-    headers = {
-        'User-Agent': HEADERS['User-Agent'],
-        'Referer': 'http://www.xiami.com/web/login',
-        'Content-Type': 'application/x-www-form-urlencoded',
-    }
-    for header in headers:
-        req.add_header(header, headers[header])
-
-    form = {
-        'email': email,
-        'password': password,
-        'LoginButton': '登录',
-    }
-    req.data = ensure_binary(parse.urlencode(form))
-
-    jar = cookiejar.CookieJar()
-    opener = request.build_opener(request.HTTPCookieProcessor(jar))
-
-    try:
-        opener.open(req)
-    except Exception as e:
-        println('Login failed: {}'.format(e))
-        return None
-
-    member_auth = next((c.value for c in jar if c.name == 'member_auth'), None)
-    if not member_auth:
-        println('Login failed: `member_auth` not in cookies')
-        return None
-
-    _auth = 'member_auth=%s; t_sign_auth=1' % member_auth
-    println('Login success')
-    return _auth
 
 
 def get_songs(url):
@@ -181,30 +133,6 @@ def parse_playlist(playlist):
 def vip_location(song_id):
     response = get_response(URL_PATTERN_VIP % song_id)
     return json.loads(response)['location']
-
-
-def decode_location(location):
-    if not location:
-        return None
-
-    url = location[1:]
-    urllen = len(url)
-    rows = int(location[0:1])
-
-    cols_base = urllen // rows  # basic column count
-    rows_ex = urllen % rows     # count of rows that have 1 more column
-
-    matrix = []
-    for r in range(rows):
-        length = cols_base + 1 if r < rows_ex else cols_base
-        matrix.append(url[:length])
-        url = url[length:]
-
-    url = ''
-    for i in range(urllen):
-        url += matrix[i % rows][i // rows]
-
-    return parse.unquote(url).replace('^', '0')
 
 
 def parse_arguments():
@@ -494,9 +422,11 @@ def main():
 
     vip_mode = args.username and args.password
     if vip_mode:
-        cookie = vip_login(args.username, args.password)
+        cookie = core.login(args.username, args.password)
         if cookie:
             HEADERS['Cookie'] = cookie
+        else:
+            vip_mode = False
 
     # parse playlist for a list of track info
     songs = [

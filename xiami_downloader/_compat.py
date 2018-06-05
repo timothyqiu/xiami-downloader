@@ -30,6 +30,9 @@ if PY2:
 
     request = urllib2
     URLError = urllib2.URLError
+
+    def iteritems(d):
+        return d.iteritems()
 else:
     import builtins
 
@@ -50,6 +53,9 @@ else:
     parse = urllib.parse
     request = urllib.request
     URLError = urllib.error.URLError
+
+    def iteritems(d):
+        return d.items()
 
 
 def ensure_binary(s, encoding='utf-8', errors='strict'):
