@@ -10,6 +10,7 @@ import json
 from xiami_downloader import __version__, core, http
 from xiami_downloader._compat import (
     binary_type,
+    ensure_binary,
     ensure_text,
     htmlparser,
     request,
@@ -40,8 +41,8 @@ URL_PATTERN_PLAYLIST = URL_PATTERN_ID + '/type/3/cat/json'
 URL_PATTERN_VIP = 'http://www.xiami.com/song/gethqsong/sid/%s'
 
 HEADERS = {
-    'User-Agent': http.USER_AGENT,
-    'Referer': 'http://www.xiami.com/song/play'
+    'User-Agent': core.USER_AGENT,
+    'Referer': 'http://www.xiami.com/song/play',
 }
 
 
@@ -82,8 +83,9 @@ def println(text):
     sys.stdout.write(text + ensure_text('\n'))
 
 
-def get_response(url):
-    """ Get HTTP response as text
+def get_response(url, encoding=None):
+    """ Get HTTP response
+    If `encoding` is not `None`, the returned value is decoded accordingly.
 
     If sent without the headers, there may be a 503/403 error.
     """
@@ -91,14 +93,18 @@ def get_response(url):
 
     try:
         response = request.urlopen(req)
-        return response.read()
+        content = response.read()
     except URLError as e:
         println(e)
-        return ''
+        content = ensure_binary('')
+
+    if encoding:
+        return content.decode(encoding)
+    return content
 
 
 def get_songs(url):
-    return parse_playlist(get_response(url))
+    return parse_playlist(get_response(url, encoding='utf-8'))
 
 
 def create_song(raw):
@@ -131,7 +137,7 @@ def parse_playlist(playlist):
 
 
 def vip_location(song_id):
-    response = get_response(URL_PATTERN_VIP % song_id)
+    response = get_response(URL_PATTERN_VIP % song_id, encoding='utf-8')
     return json.loads(response)['location']
 
 
@@ -231,7 +237,8 @@ class XiamiDownloader:
         response = json.loads(get_response(
             'http://www.xiami.com/song/playlist/id/{}/type/1/cat/json'.format(
                 album_id
-            )
+            ),
+            encoding='utf-8',
         ))
         return response
 
@@ -326,7 +333,7 @@ def add_id3_tag(filename, song, no_lrc_timetag):
     # Unsynchronised lyrics/text transcription
     if song.lyric_url:
         println('Getting lyrics...')
-        lyric = get_response(song.lyric_url)
+        lyric = get_response(song.lyric_url, encoding='utf-8')
 
         if no_lrc_timetag:
             old_lyric = lyric
@@ -394,7 +401,7 @@ def get_entity_id(category, id_or_code):
     base_url = 'http://www.xiami.com/{}'.format(category)
 
     url = '{}/{}'.format(base_url, code)
-    html = get_response(url)
+    html = get_response(url, encoding='utf-8')
 
     pattern = r'<link[^>]+href="{}/(\d+)"'.format(base_url)
     match = re.search(pattern, html)
