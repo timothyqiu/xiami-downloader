@@ -1,8 +1,11 @@
 # Xiami Music Preview Downloader
 
+[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
+[![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
+
 A simple tool for downloading music previews from [Xiami.com][1]
 
-Note: this script requires Python 2
+Note: this script uses Python 2. Python 3 support is still in progress.
 
 ## Dependencies
 
@@ -12,7 +15,7 @@ Note: this script requires Python 2
 
     python -m xiami_downloader.cli [options]
 
-    # Install via pip (Currently not on PyPI, so you have to download this first)
+    # or, install via pip (Currently not on PyPI, so you have to download this first)
     pip install .    # Install
     xiami [options]  # Run
 
@@ -59,9 +62,12 @@ This software is distributed under the [MIT License][2].
 
 # 虾米音乐试听下载器
 
+[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
+[![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
+
 从[虾米网][1]上下载音乐试听的小工具。
 
-注：这是一个 Python 2 脚本
+注：这是一个 Python 2 脚本。Python 3 支持工作仍在进行。
 
 ## 依赖
 
@@ -71,7 +77,7 @@ This software is distributed under the [MIT License][2].
 
     python -m xiami_downloader.cli [options]
 
-    # 使用 pip 安装（尚未提交 PyPI，所以需要先手动下载源码）
+    # 或者，使用 pip 安装（尚未提交 PyPI，所以需要先手动下载源码）
     pip install .    # 安装
     xiami [options]  # 运行
 
