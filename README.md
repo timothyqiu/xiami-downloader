@@ -49,9 +49,18 @@ Note that Xiami has a limits the downloads. If you are downloading lots of track
 
 ## Example
 
-To download the album _Mahōtsukai no Yoru OST_, first obtain the album's ID from the url:  <http://www.xiami.com/album/511682> (__511682__). Then use the following command to download the album:
+To download the album _Mahōtsukai no Yoru OST_, first checkout the album's ID from the url. The url you're visiting may be in one of the two forms:
+
+* <https://www.xiami.com/album/oJ8ce3e30> (__oJ8ce3e30__)
+* <https://www.xiami.com/album/511682> (__511682__)
+
+Numeric ID can be used directly, to download the album:
 
     python -m xiami_downloader.cli -a 511682
+
+If the ID is alphanumeric, click the "立即播放" button in the page and a new player window will pop up. The corresponding numeric ID should be in the url of that window:
+
+    https://www.xiami.com/play?ids=/song/playlist/id/511682/type/1#loaded
 
 ## License
 
@@ -111,9 +120,18 @@ This software is distributed under the [MIT License][2].
 
 ## 示例
 
-例如要下载专辑《魔法使いの夜 オリジナルサウンドトラック》，首先从其 URL <http://www.xiami.com/album/511682> 中找出专辑 ID： __511682__。然后使用如下命令下载：
+例如要下载专辑《魔法使いの夜 オリジナルサウンドトラック》，首先检查 URL 中的专辑 ID。你可能会看到两种形式的 URL：
+
+* <https://www.xiami.com/album/oJ8ce3e30> (__oJ8ce3e30__)
+* <https://www.xiami.com/album/511682> (__511682__)
+
+数字 ID 可以直接使用，下载该专辑只需执行：
 
     python -m xiami_downloader.cli -a 511682
+
+如果 ID 包含字母，那么需要先点击页面中的「立即播放」按钮打开新的播放器窗口。对应的数字 ID 可以在该窗口的 URL 中找到：
+
+    https://www.xiami.com/play?ids=/song/playlist/id/511682/type/1#loaded
 
 ## 许可
 
