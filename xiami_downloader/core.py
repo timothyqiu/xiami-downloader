@@ -45,7 +45,7 @@ def login(email, password):
     logging.info('Start to login to Xiami.com')
 
     headers = {
-        'User-Agent': http.USER_AGENT,
+        'User-Agent': USER_AGENT,
         'Referer': 'http://www.xiami.com/web/login',
         'Content-Type': 'application/x-www-form-urlencoded',
     }
