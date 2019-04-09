@@ -1,3 +1,7 @@
+⚠️ This tool no longer works since Xiami changed their web player API. This tool utilizes the old API, which may cause your IP to be banned for some time. To be updated.
+
+⚠️ 由于虾米修改了播放器接口，此工具目前已失效。使用此工具访问原接口可能造成 IP 被暂时屏蔽。待更新。
+
 # Xiami Music Preview Downloader
 
 [![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
